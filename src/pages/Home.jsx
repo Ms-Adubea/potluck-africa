@@ -1,6 +1,7 @@
 import React from "react";
 import { ChefHat, Users, MapPin, Star, Utensils, Home, Store } from "lucide-react";
 import heroImage from "../assets/images/potluck-hero.jpeg";
+import { Link } from "react-router-dom";
 
 const HomePage = () => {
   return (
@@ -39,9 +40,11 @@ const HomePage = () => {
             </p>
 
             <div className="flex justify-center">
+                <Link to="/signup">
               <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
                 Get Started
               </button>
+              </Link>
             </div>
           </div>
         </div>

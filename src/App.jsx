@@ -3,6 +3,7 @@ import './App.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './pages/Home';
 import HomePage from './pages/Home';
+import Signup from './pages/Signup';
 
 function App() {
     
@@ -10,6 +11,14 @@ function App() {
     {
       path: "/",
       element: <HomePage />,
+    },
+    {
+      path: "/signup",
+      element: <Signup />,
+    },
+    {
+      path: "/login",
+      element: <Signup />,
     },
    
   

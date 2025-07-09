@@ -1,14 +1,11 @@
-import { useState } from 'react'
-import './App.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import Home from './pages/Home';
 import HomePage from './pages/Home';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import PotchefOnboarding from './components/onboarding/PotchefOnboarding';
+import Dashboard from './pages/Dashboard';  // 👉 Import the Dashboard
 
 function App() {
-    
   const router = createBrowserRouter([
     {
       path: "/",
@@ -26,17 +23,13 @@ function App() {
       path: "/potchef-onboarding",
       element: <PotchefOnboarding />,
     },
-   
-  
- 
+    {
+      path: "/dashboard",              // 👉 New Dashboard Route
+      element: <Dashboard />,
+    },
   ]);
-  return <RouterProvider router={router} />;
 
-  return (
-    <>
-      
-    </>
-  )
+  return <RouterProvider router={router} />;
 }
 
-export default App
+export default App;

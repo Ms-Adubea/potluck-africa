@@ -1,5 +1,13 @@
 import React from "react";
-import { ChefHat, Users, MapPin, Star, Utensils, Home, Store } from "lucide-react";
+import {
+  ChefHat,
+  Users,
+  MapPin,
+  Star,
+  Utensils,
+  Home,
+  Store,
+} from "lucide-react";
 import heroImage from "../assets/images/potluck-hero.jpeg";
 import { Link } from "react-router-dom";
 
@@ -40,10 +48,10 @@ const HomePage = () => {
             </p>
 
             <div className="flex justify-center">
-                <Link to="/signup">
-              <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
-                Get Started
-              </button>
+              <Link to="/signup">
+                <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
+                  Get Started
+                </button>
               </Link>
             </div>
           </div>
@@ -69,10 +77,13 @@ const HomePage = () => {
                 <div className="bg-orange-100 rounded-full p-4 w-20 h-20 flex items-center justify-center mx-auto mb-6">
                   <Utensils className="h-10 w-10 text-orange-500" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Potlucky</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Potlucky
+                </h3>
                 <p className="text-gray-600 font-medium mb-4">Food Lover</p>
                 <p className="text-gray-700 mb-6">
-                  Discover and order delicious homemade meals from local cooks in your area
+                  Discover and order delicious homemade meals from local cooks
+                  in your area
                 </p>
                 <ul className="text-left text-gray-600 space-y-2 mb-8">
                   <li className="flex items-start">
@@ -92,9 +103,11 @@ const HomePage = () => {
                     <span>Save favorites</span>
                   </li>
                 </ul>
-                <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
-                  Join as Potlucky
-                </button>
+                <Link to="/signup">
+                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                    Join as Potlucky
+                  </button>
+                </Link>
               </div>
             </div>
 
@@ -104,10 +117,15 @@ const HomePage = () => {
                 <div className="bg-orange-100 rounded-full p-4 w-20 h-20 flex items-center justify-center mx-auto mb-6">
                   <ChefHat className="h-10 w-10 text-green-500" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Potchef</h3>
-                <p className="text-gray-600 font-medium mb-4">Home Cook & Vendor</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Potchef
+                </h3>
+                <p className="text-gray-600 font-medium mb-4">
+                  Home Cook & Vendor
+                </p>
                 <p className="text-gray-700 mb-6">
-                  Share your culinary passion and earn income by cooking for your community
+                  Share your culinary passion and earn income by cooking for
+                  your community
                 </p>
                 <ul className="text-left text-gray-600 space-y-2 mb-8">
                   <li className="flex items-start">
@@ -127,9 +145,11 @@ const HomePage = () => {
                     <span>Build your reputation</span>
                   </li>
                 </ul>
-                <button className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
-                  Join as Potchef
-                </button>
+                <Link to="/signup">
+                  <button className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                    Join as Potchef
+                  </button>
+                </Link>
               </div>
             </div>
 
@@ -139,10 +159,15 @@ const HomePage = () => {
                 <div className="bg-orange-100 rounded-full p-4 w-20 h-20 flex items-center justify-center mx-auto mb-6">
                   <Store className="h-10 w-10 text-orange-800" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Franchisee</h3>
-                <p className="text-gray-600 font-medium mb-4">Dine-in Operator</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Franchisee
+                </h3>
+                <p className="text-gray-600 font-medium mb-4">
+                  Dine-in Operator
+                </p>
                 <p className="text-gray-700 mb-6">
-                  Operate a local Potluck location and serve fresh meals to customers
+                  Operate a local Potluck location and serve fresh meals to
+                  customers
                 </p>
                 <ul className="text-left text-gray-600 space-y-2 mb-8">
                   <li className="flex items-start">
@@ -162,9 +187,11 @@ const HomePage = () => {
                     <span>Track performance</span>
                   </li>
                 </ul>
-                <button className="w-full bg-orange-800 hover:bg-orange-900 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
-                  Join as Franchisee
-                </button>
+                <Link to="/signup">
+                  <button className="w-full bg-orange-800 hover:bg-orange-900 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                    Join as Franchisee
+                  </button>
+                </Link>
               </div>
             </div>
           </div>

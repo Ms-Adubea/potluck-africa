@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -208,9 +209,11 @@ const Login = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
+              <Link to="/signup">
               <button className="text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors">
                 Sign up
               </button>
+              </Link>
             </p>
           </div>
         </div>

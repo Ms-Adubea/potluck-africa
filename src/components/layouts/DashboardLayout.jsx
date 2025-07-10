@@ -2,8 +2,6 @@
 import React from 'react';
 import Sidebar from '../common/Sidebar';
 import Header from '../common/Header';
-// import Sidebar from '../components/common/Sidebar';
-// import Header from '../components/common/Header';
 
 const DashboardLayout = ({ children, currentRole, setCurrentRole, activeTab, setActiveTab }) => (
   <div className="flex h-screen bg-gray-100">

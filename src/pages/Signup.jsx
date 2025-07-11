@@ -94,7 +94,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-red-50 to-orange-100 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100">
         {/* Header */}
         <div className="text-center pt-8 pb-6 px-8">
@@ -123,7 +123,7 @@ const Signup = () => {
                   placeholder="John Doe"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -144,7 +144,7 @@ const Signup = () => {
                   placeholder="your@email.com"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-orange-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -163,7 +163,7 @@ const Signup = () => {
                   id="role"
                   value={formData.role}
                   onChange={(e) => handleInputChange('role', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors appearance-none bg-white ${
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-orange-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors appearance-none ${
                     errors.role ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
@@ -196,7 +196,7 @@ const Signup = () => {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg bg-orange-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -224,7 +224,7 @@ const Signup = () => {
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg bg-orange-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />

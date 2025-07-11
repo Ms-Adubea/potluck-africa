@@ -71,7 +71,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-red-50 to-orange-100 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100">
         {/* Header */}
         <div className="text-center pt-8 pb-6 px-8">
@@ -100,7 +100,7 @@ const Login = () => {
                   placeholder="your@email.com"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -121,7 +121,7 @@ const Login = () => {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -156,7 +156,6 @@ const Login = () => {
             </div>
 
             {/* Submit Button */}
-            <Link to="/dashboard">
             <div
               onClick={handleClick}
               className={`w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer text-center ${
@@ -172,7 +171,6 @@ const Login = () => {
                 'Sign In'
               )}
             </div>
-            </Link>
           </div>
 
           {/* Divider */}

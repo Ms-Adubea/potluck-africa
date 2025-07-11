@@ -156,6 +156,7 @@ const Login = () => {
             </div>
 
             {/* Submit Button */}
+            <Link to="/dashboard">
             <div
               onClick={handleClick}
               className={`w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer text-center ${
@@ -171,6 +172,7 @@ const Login = () => {
                 'Sign In'
               )}
             </div>
+            </Link>
           </div>
 
           {/* Divider */}

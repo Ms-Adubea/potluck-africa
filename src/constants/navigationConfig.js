@@ -1,5 +1,8 @@
-// 📁 src/constants/navigationConfig.js
-export const navigationConfig = {
+import React, { useState } from 'react';
+import { Bell, User, Settings, LogOut, Home, ChefHat, ShoppingCart, Heart, Search, CheckCircle, BarChart3, Users, Package } from 'lucide-react';
+
+// Navigation configuration
+const navigationConfig = {
   potchef: {
     title: 'Chef Dashboard',
     avatar: '👨‍🍳',
@@ -7,8 +10,7 @@ export const navigationConfig = {
       { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
       { id: 'meals', label: 'My Meals', icon: 'ChefHat' },
       { id: 'orders', label: 'Orders', icon: 'ShoppingCart' },
-      { id: 'profile', label: 'Profile', icon: 'User' },
-      { id: 'settings', label: 'Settings', icon: 'Settings' }
+      { id: 'favorites', label: 'Favorites', icon: 'Heart' }
     ]
   },
   potlucky: {
@@ -16,11 +18,9 @@ export const navigationConfig = {
     avatar: '🍽️',
     navigation: [
       { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
-      { id: 'browse', label: 'Browse Meals', icon: 'Search' },
-      { id: 'orders', label: 'My Orders', icon: 'ShoppingCart' },
-      { id: 'favorites', label: 'Favorites', icon: 'Heart' },
-      { id: 'profile', label: 'Profile', icon: 'User' },
-      { id: 'settings', label: 'Settings', icon: 'Settings' }
+      { id: 'browse', label: 'Browse', icon: 'Search' },
+      { id: 'orders', label: 'Orders', icon: 'ShoppingCart' },
+      { id: 'favorites', label: 'Favorites', icon: 'Heart' }
     ]
   },
   franchisee: {
@@ -28,10 +28,9 @@ export const navigationConfig = {
     avatar: '🏢',
     navigation: [
       { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
-      { id: 'approvals', label: 'Meal Approvals', icon: 'CheckCircle' },
-      { id: 'summary', label: 'Daily Summary', icon: 'BarChart3' },
-      { id: 'chefs', label: 'Manage Chefs', icon: 'Users' },
-      { id: 'settings', label: 'Settings', icon: 'Settings' }
+      { id: 'approvals', label: 'Approvals', icon: 'CheckCircle' },
+      { id: 'summary', label: 'Summary', icon: 'BarChart3' },
+      { id: 'chefs', label: 'Chefs', icon: 'Users' }
     ]
   },
   admin: {
@@ -39,10 +38,11 @@ export const navigationConfig = {
     avatar: '⚙️',
     navigation: [
       { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
-      { id: 'users', label: 'User Management', icon: 'Users' },
+      { id: 'users', label: 'Users', icon: 'Users' },
       { id: 'analytics', label: 'Analytics', icon: 'BarChart3' },
-      { id: 'content', label: 'Content Management', icon: 'Package' },
-      { id: 'settings', label: 'Settings', icon: 'Settings' }
+      { id: 'content', label: 'Content', icon: 'Package' }
     ]
   }
 };
+
+export default navigationConfig;

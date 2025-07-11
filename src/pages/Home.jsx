@@ -48,9 +48,9 @@ const HomePage = () => {
             </p>
 
             <div className="flex justify-center">
-              <Link to="/signup">
+              <Link to="/login">
                 <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
-                  Get Started
+                  Sign In
                 </button>
               </Link>
             </div>
@@ -115,7 +115,7 @@ const HomePage = () => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
               <div className="p-8 text-center">
                 <div className="bg-orange-100 rounded-full p-4 w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                  <ChefHat className="h-10 w-10 text-green-500" />
+                  <ChefHat className="h-10 w-10 text-orange-500" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
                   Potchef
@@ -146,7 +146,7 @@ const HomePage = () => {
                   </li>
                 </ul>
                 <Link to="/signup">
-                  <button className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
                     Join as Potchef
                   </button>
                 </Link>
@@ -157,7 +157,7 @@ const HomePage = () => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
               <div className="p-8 text-center">
                 <div className="bg-orange-100 rounded-full p-4 w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                  <Store className="h-10 w-10 text-orange-800" />
+                  <Store className="h-10 w-10 text-orange-500" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
                   Franchisee
@@ -188,7 +188,7 @@ const HomePage = () => {
                   </li>
                 </ul>
                 <Link to="/signup">
-                  <button className="w-full bg-orange-800 hover:bg-orange-900 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
                     Join as Franchisee
                   </button>
                 </Link>

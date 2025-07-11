@@ -1,15 +1,23 @@
 // 📁 src/layouts/DashboardLayout.jsx
 import React from 'react';
-import Sidebar from '../common/Sidebar';
 import Header from '../common/Header';
+import BottomTabs from '../common/BottomTabs';
+
+// const DashboardLayout = ({ children, currentRole, setCurrentRole, activeTab, setActiveTab }) => (
+//   <div className="flex h-screen bg-gray-100">
+//     <Sidebar currentRole={currentRole} setCurrentRole={setCurrentRole} setActiveTab={setActiveTab} activeTab={activeTab} />
+//     <div className="flex-1 flex flex-col overflow-hidden">
+//       <Header currentRole={currentRole} />
+//       <main className="flex-1 overflow-y-auto p-6">{children}</main>
+//     </div>
+//   </div>
+// );
 
 const DashboardLayout = ({ children, currentRole, setCurrentRole, activeTab, setActiveTab }) => (
-  <div className="flex h-screen bg-gray-100">
-    <Sidebar currentRole={currentRole} setCurrentRole={setCurrentRole} setActiveTab={setActiveTab} activeTab={activeTab} />
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <Header currentRole={currentRole} />
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
-    </div>
+  <div className="flex flex-col h-screen bg-gray-100">
+    <Header currentRole={currentRole} setCurrentRole={setCurrentRole} />
+    <main className="flex-1 overflow-y-auto p-4 pb-20">{children}</main>
+    <BottomTabs currentRole={currentRole} activeTab={activeTab} setActiveTab={setActiveTab} />
   </div>
 );
 

@@ -6,6 +6,7 @@ import FranchiseeDashboard from '../components/roles/FranchiseeDashboard';
 import AdminDashboard from '../components/roles/AdminDashboard';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import navigationConfig from '../constants/navigationConfig';
+import AddMeal from './potchef/AddMeal';
 
 
 const Dashboard = () => {
@@ -21,6 +22,11 @@ const Dashboard = () => {
         case 'admin': return <AdminDashboard />;
         default: return null;
       }
+    }
+    
+    // Handle Add Meal tab for Potchef
+    if (activeTab === 'addmeal' && currentRole === 'potchef') {
+      return <AddMeal />;
     }
     
     // Handle other tabs

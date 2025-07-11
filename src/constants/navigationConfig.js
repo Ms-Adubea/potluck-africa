@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Bell, User, Settings, LogOut, Home, ChefHat, ShoppingCart, Heart, Search, CheckCircle, BarChart3, Users, Package } from 'lucide-react';
+import { Bell, User, Settings, LogOut, Home, ChefHat, ShoppingCart, Heart, Search, CheckCircle, BarChart3, Users, Package, Plus, Camera, Clock, DollarSign, MapPin, X } from 'lucide-react';
+
 
 // Navigation configuration
 const navigationConfig = {
@@ -8,9 +9,9 @@ const navigationConfig = {
     avatar: '👨‍🍳',
     navigation: [
       { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
+      { id: 'addmeal', label: 'Add Meal', icon: 'Plus' },
       { id: 'meals', label: 'My Meals', icon: 'ChefHat' },
       { id: 'orders', label: 'Orders', icon: 'ShoppingCart' },
-      { id: 'favorites', label: 'Favorites', icon: 'Heart' }
     ]
   },
   potlucky: {

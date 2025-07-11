@@ -10,6 +10,8 @@ import PotluckyDashboard from './components/roles/PotluckyDashboard';
 import FranchiseeDashboard from './components/roles/FranchiseeDashboard';
 import AdminDashboard from './components/roles/AdminDashboard';
 import AddMeal from './pages/potchef/AddMeal';
+import MyMeals from './pages/potchef/MyMeals';
+import Browse from './pages/potlucky/Browse';
 
 function App() {
   const router = createBrowserRouter([
@@ -39,7 +41,7 @@ function App() {
           children: [
             { index: true, element: <PotchefDashboard /> },
             { path: "addmeal", element: <AddMeal /> },
-            { path: "meals", element: <div>My Meals Component</div> },
+            { path: "meals", element: <MyMeals /> },
             { path: "orders", element: <div>Orders Component</div> },
           ]
         },
@@ -48,7 +50,7 @@ function App() {
           path: "potlucky",
           children: [
             { index: true, element: <PotluckyDashboard /> },
-            { path: "browse", element: <div>Browse Component</div> },
+            { path: "browse", element: <Browse /> },
             { path: "orders", element: <div>Orders Component</div> },
             { path: "favorites", element: <div>Favorites Component</div> },
           ]

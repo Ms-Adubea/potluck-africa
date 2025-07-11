@@ -271,7 +271,7 @@ const handleSaveEdit = (updatedMeal) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold text-gray-900 truncate pr-2">{meal.name}</h3>
-                      <span className="text-lg font-bold text-orange-600 whitespace-nowrap">${meal.price}</span>
+                      <span className="text-lg font-bold text-orange-600 whitespace-nowrap">¢{meal.price}</span>
                     </div>
                     
                     <div className="flex items-center text-sm text-gray-500 mb-2">

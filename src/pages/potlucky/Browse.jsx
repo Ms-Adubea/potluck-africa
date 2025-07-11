@@ -1,346 +1,496 @@
-import React, { useState } from 'react';
-import { Grid, List, Edit, Eye, EyeOff, Clock, Star, MapPin, MoreVertical, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, MapPin, Star, Clock, DollarSign, Heart, ShoppingCart, ChefHat, X, SlidersHorizontal } from 'lucide-react';
 
 const Browse = () => {
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [meals, setMeals] = useState([]);
+  const [filteredMeals, setFilteredMeals] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'available', 'unavailable'
+  const [showFilters, setShowFilters] = useState(false);
+  const [favorites, setFavorites] = useState(new Set());
+  const [loading, setLoading] = useState(true);
   
-  // Sample meals data - replace with actual data from your API
-  const [meals, setMeals] = useState([
-    {
-      id: 1,
-      name: "Jollof Rice with Grilled Chicken",
-      price: 25.00,
-      image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop",
-      description: "Perfectly seasoned jollof rice served with tender grilled chicken and plantain.",
-      category: "Main Course",
-      prepTime: "30 mins",
-      rating: 4.8,
-      reviewCount: 24,
-      isAvailable: true,
-      location: "Accra, Ghana",
-      createdAt: "2024-01-15"
-    },
-    {
-      id: 2,
-      name: "Kelewele with Groundnut Soup",
-      price: 15.00,
-      image: "https://images.unsplash.com/photo-1596040767493-75c5c2e5d355?w=400&h=300&fit=crop",
-      description: "Spicy fried plantain cubes served with rich groundnut soup.",
-      category: "Traditional",
-      prepTime: "45 mins",
-      rating: 4.6,
-      reviewCount: 18,
-      isAvailable: false,
-      location: "Kumasi, Ghana",
-      createdAt: "2024-01-10"
-    },
-    {
-      id: 3,
-      name: "Banku with Tilapia",
-      price: 20.00,
-      image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop",
-      description: "Fresh tilapia grilled to perfection served with banku and spicy pepper sauce.",
-      category: "Seafood",
-      prepTime: "25 mins",
-      rating: 4.9,
-      reviewCount: 32,
-      isAvailable: true,
-      location: "Tema, Ghana",
-      createdAt: "2024-01-12"
-    },
-    {
-      id: 4,
-      name: "Waakye with Stew",
-      price: 12.00,
-      image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop",
-      description: "Traditional waakye with beef stew, boiled egg, and gari.",
-      category: "Traditional",
-      prepTime: "40 mins",
-      rating: 4.7,
-      reviewCount: 15,
-      isAvailable: true,
-      location: "Accra, Ghana",
-      createdAt: "2024-01-08"
-    },
-    {
-      id: 5,
-      name: "Fufu with Light Soup",
-      price: 18.00,
-      image: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop",
-      description: "Soft fufu served with aromatic light soup and assorted meat.",
-      category: "Traditional",
-      prepTime: "35 mins",
-      rating: 4.5,
-      reviewCount: 21,
-      isAvailable: false,
-      location: "Accra, Ghana",
-      createdAt: "2024-01-05"
-    },
-    {
-      id: 6,
-      name: "Red Red with Plantain",
-      price: 10.00,
-      image: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400&h=300&fit=crop",
-      description: "Delicious red red (bean stew) served with fried plantain.",
-      category: "Traditional",
-      prepTime: "20 mins",
-      rating: 4.4,
-      reviewCount: 12,
-      isAvailable: true,
-      location: "Kumasi, Ghana",
-      createdAt: "2024-01-03"
-    }
-  ]);
-
-  // Toggle availability status
-  const toggleAvailability = (mealId) => {
-    setMeals(prevMeals =>
-      prevMeals.map(meal =>
-        meal.id === mealId ? { ...meal, isAvailable: !meal.isAvailable } : meal
-      )
-    );
-  };
-
-  // Filter meals based on search and status
-  const filteredMeals = meals.filter(meal => {
-    const matchesSearch = meal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         meal.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'available' && meal.isAvailable) ||
-                         (filterStatus === 'unavailable' && !meal.isAvailable);
-    return matchesSearch && matchesStatus;
+  // Filter states
+  const [filters, setFilters] = useState({
+    location: '',
+    cuisine: '',
+    minPrice: '',
+    maxPrice: '',
+    rating: '',
+    deliveryTime: ''
   });
 
-  // Grid view component
-  const GridView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredMeals.map(meal => (
-        <div key={meal.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="relative">
-            <img 
-              src={meal.image} 
-              alt={meal.name}
-              className="w-full h-48 object-cover"
-            />
-            <div className="absolute top-2 right-2">
-              <button
-                onClick={() => toggleAvailability(meal.id)}
-                className={`p-2 rounded-full ${meal.isAvailable ? 'bg-green-500' : 'bg-gray-500'} text-white`}
-              >
-                {meal.isAvailable ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </button>
-            </div>
-            <div className="absolute bottom-2 left-2">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                meal.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
-                {meal.isAvailable ? 'Available' : 'Unavailable'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="p-4">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-lg text-gray-900 line-clamp-1">{meal.name}</h3>
-              <span className="text-lg font-bold text-orange-600">${meal.price}</span>
-            </div>
-            
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{meal.description}</p>
-            
-            <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-              <div className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                {meal.prepTime}
-              </div>
-              <div className="flex items-center">
-                <Star className="w-4 h-4 mr-1 fill-current text-yellow-400" />
-                {meal.rating} ({meal.reviewCount})
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-              <div className="flex items-center">
-                <MapPin className="w-4 h-4 mr-1" />
-                {meal.location}
-              </div>
-              <span className="bg-gray-100 px-2 py-1 rounded">{meal.category}</span>
-            </div>
-            
-            <div className="flex gap-2">
-              <button className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </button>
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  // Mock data - replace with actual API call
+  const mockMeals = [
+    {
+      id: 'meal-001',
+      name: 'Authentic Jollof Rice with Grilled Chicken',
+      description: 'Perfectly spiced West African jollof rice served with tender grilled chicken and plantain',
+      price: 25.99,
+      cuisine: 'West African',
+      rating: 4.8,
+      reviewCount: 124,
+      deliveryTime: '30-45 min',
+      location: 'East Legon, Accra',
+      chef: {
+        name: 'Mama Akosua',
+        rating: 4.9,
+        experience: '5+ years'
+      },
+      image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop',
+      available: true,
+      tags: ['spicy', 'gluten-free', 'popular']
+    },
+    {
+      id: 'meal-002',
+      name: 'Traditional Waakye with Fish',
+      description: 'Authentic Ghanaian waakye with fresh fish, boiled eggs, and spicy pepper sauce',
+      price: 18.50,
+      cuisine: 'Ghanaian',
+      rating: 4.6,
+      reviewCount: 89,
+      deliveryTime: '25-35 min',
+      location: 'Tema, Accra',
+      chef: {
+        name: 'Chef Kwame',
+        rating: 4.7,
+        experience: '3+ years'
+      },
+      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+      available: true,
+      tags: ['traditional', 'protein-rich']
+    },
+    {
+      id: 'meal-003',
+      name: 'Spicy Kelewele with Groundnut Soup',
+      description: 'Crispy spiced plantain cubes served with rich groundnut soup and your choice of meat',
+      price: 22.00,
+      cuisine: 'West African',
+      rating: 4.7,
+      reviewCount: 67,
+      deliveryTime: '40-50 min',
+      location: 'Kumasi',
+      chef: {
+        name: 'Auntie Ama',
+        rating: 4.8,
+        experience: '7+ years'
+      },
+      image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&h=300&fit=crop',
+      available: true,
+      tags: ['spicy', 'vegetarian-option', 'comfort-food']
+    },
+    {
+      id: 'meal-004',
+      name: 'Fresh Banku with Grilled Tilapia',
+      description: 'Freshly prepared banku served with perfectly grilled tilapia and hot pepper sauce',
+      price: 32.75,
+      cuisine: 'Ghanaian',
+      rating: 4.9,
+      reviewCount: 156,
+      deliveryTime: '35-45 min',
+      location: 'Takoradi',
+      chef: {
+        name: 'Chef Kojo',
+        rating: 4.9,
+        experience: '8+ years'
+      },
+      image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
+      available: true,
+      tags: ['fresh', 'high-protein', 'chef-special']
+    },
+    {
+      id: 'meal-005',
+      name: 'Red Red with Fried Plantain',
+      description: 'Delicious red red (black-eyed peas stew) with perfectly fried sweet plantains',
+      price: 15.99,
+      cuisine: 'Ghanaian',
+      rating: 4.5,
+      reviewCount: 92,
+      deliveryTime: '20-30 min',
+      location: 'Tamale',
+      chef: {
+        name: 'Sister Efua',
+        rating: 4.6,
+        experience: '4+ years'
+      },
+      image: 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop',
+      available: false,
+      tags: ['vegetarian', 'budget-friendly', 'comfort-food']
+    },
+    {
+      id: 'meal-006',
+      name: 'Fufu with Light Soup',
+      description: 'Traditional fufu served with aromatic light soup containing assorted meat and fish',
+      price: 28.50,
+      cuisine: 'West African',
+      rating: 4.8,
+      reviewCount: 134,
+      deliveryTime: '45-55 min',
+      location: 'East Legon, Accra',
+      chef: {
+        name: 'Chef Adjoa',
+        rating: 4.8,
+        experience: '6+ years'
+      },
+      image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+      available: true,
+      tags: ['traditional', 'filling', 'authentic']
+    }
+  ];
 
-  // List view component
-  const ListView = () => (
-    <div className="space-y-4">
-      {filteredMeals.map(meal => (
-        <div key={meal.id} className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex gap-4">
-            <div className="relative">
-              <img 
-                src={meal.image} 
-                alt={meal.name}
-                className="w-24 h-24 object-cover rounded-lg"
-              />
-              <div className="absolute -top-2 -right-2">
-                <button
-                  onClick={() => toggleAvailability(meal.id)}
-                  className={`p-1 rounded-full ${meal.isAvailable ? 'bg-green-500' : 'bg-gray-500'} text-white`}
-                >
-                  {meal.isAvailable ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold text-lg text-gray-900">{meal.name}</h3>
-                  <p className="text-gray-600 text-sm">{meal.description}</p>
-                </div>
-                <span className="text-lg font-bold text-orange-600">${meal.price}</span>
-              </div>
-              
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                <div className="flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  {meal.prepTime}
-                </div>
-                <div className="flex items-center">
-                  <Star className="w-4 h-4 mr-1 fill-current text-yellow-400" />
-                  {meal.rating} ({meal.reviewCount})
-                </div>
-                <div className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {meal.location}
-                </div>
-                <span className="bg-gray-100 px-2 py-1 rounded">{meal.category}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  meal.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {meal.isAvailable ? 'Available' : 'Unavailable'}
-                </span>
-              </div>
-              
-              <div className="flex gap-2">
-                <button className="bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors flex items-center">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </button>
-                <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const cuisineTypes = ['All', 'Ghanaian', 'West African', 'Nigerian', 'Ivorian'];
+  const locations = ['All', 'East Legon, Accra', 'Tema, Accra', 'Kumasi', 'Takoradi', 'Tamale'];
+  const priceRanges = [
+    { label: 'All', min: '', max: '' },
+    { label: 'Under ¢20', min: '', max: '20' },
+    { label: '¢20-¢30', min: '20', max: '30' },
+    { label: '¢30-¢40', min: '30', max: '40' },
+    { label: 'Over ¢40', min: '40', max: '' }
+  ];
+
+  useEffect(() => {
+    // Simulate API call
+    setTimeout(() => {
+      setMeals(mockMeals);
+      setFilteredMeals(mockMeals);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    filterMeals();
+  }, [searchTerm, filters, meals]);
+
+  const filterMeals = () => {
+    let filtered = meals;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(meal => 
+        meal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.cuisine.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.chef.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Location filter
+    if (filters.location && filters.location !== 'All') {
+      filtered = filtered.filter(meal => meal.location === filters.location);
+    }
+
+    // Cuisine filter
+    if (filters.cuisine && filters.cuisine !== 'All') {
+      filtered = filtered.filter(meal => meal.cuisine === filters.cuisine);
+    }
+
+    // Price filter
+    if (filters.minPrice) {
+      filtered = filtered.filter(meal => meal.price >= parseFloat(filters.minPrice));
+    }
+    if (filters.maxPrice) {
+      filtered = filtered.filter(meal => meal.price <= parseFloat(filters.maxPrice));
+    }
+
+    // Rating filter
+    if (filters.rating) {
+      filtered = filtered.filter(meal => meal.rating >= parseFloat(filters.rating));
+    }
+
+    setFilteredMeals(filtered);
+  };
+
+  const toggleFavorite = (mealId) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(mealId)) {
+        newFavorites.delete(mealId);
+      } else {
+        newFavorites.add(mealId);
+      }
+      return newFavorites;
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      location: '',
+      cuisine: '',
+      minPrice: '',
+      maxPrice: '',
+      rating: '',
+      deliveryTime: ''
+    });
+    setSearchTerm('');
+  };
+
+  const applyPriceRange = (range) => {
+    setFilters(prev => ({
+      ...prev,
+      minPrice: range.min,
+      maxPrice: range.max
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">My Meals</h1>
-        <p className="text-gray-600">Manage your posted meals and their availability</p>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Browse Meals</h1>
+        <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+          {filteredMeals.length} meals
+        </div>
       </div>
 
-      {/* Controls */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex gap-4 items-center w-full md:w-auto">
-            {/* Search */}
-            <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search meals..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-            </div>
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input
+          type="text"
+          placeholder="Search meals, chefs, or cuisine..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        />
+      </div>
 
-            {/* Filter */}
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+      {/* Quick Filters & Filter Button */}
+      <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors flex-shrink-0"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          <span>Filters</span>
+        </button>
+        
+        {/* Quick cuisine filters */}
+        {cuisineTypes.slice(0, 4).map((cuisine) => (
+          <button
+            key={cuisine}
+            onClick={() => setFilters(prev => ({ ...prev, cuisine: cuisine === 'All' ? '' : cuisine }))}
+            className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filters.cuisine === cuisine || (cuisine === 'All' && !filters.cuisine)
+                ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {cuisine}
+          </button>
+        ))}
+      </div>
+
+      {/* Advanced Filters Panel */}
+      {showFilters && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="text-gray-400 hover:text-gray-600"
             >
-              <option value="all">All Status</option>
-              <option value="available">Available</option>
-              <option value="unavailable">Unavailable</option>
-            </select>
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* View Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">View:</span>
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-orange-600 text-white' : 'bg-white text-gray-600'}`}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Location Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <select
+                value={filters.location}
+                onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               >
-                <Grid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-orange-600 text-white' : 'bg-white text-gray-600'}`}
+                {locations.map(location => (
+                  <option key={location} value={location === 'All' ? '' : location}>
+                    {location}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Cuisine Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cuisine</label>
+              <select
+                value={filters.cuisine}
+                onChange={(e) => setFilters(prev => ({ ...prev, cuisine: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               >
-                <List className="w-4 h-4" />
-              </button>
+                {cuisineTypes.map(cuisine => (
+                  <option key={cuisine} value={cuisine === 'All' ? '' : cuisine}>
+                    {cuisine}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Price Range */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
+              <div className="flex flex-wrap gap-2">
+                {priceRanges.map((range, index) => (
+                  <button
+                    key={index}
+                    onClick={() => applyPriceRange(range)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      filters.minPrice === range.min && filters.maxPrice === range.max
+                        ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Rating Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Rating</label>
+              <select
+                value={filters.rating}
+                onChange={(e) => setFilters(prev => ({ ...prev, rating: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                <option value="">Any Rating</option>
+                <option value="4.5">4.5+ Stars</option>
+                <option value="4.0">4.0+ Stars</option>
+                <option value="3.5">3.5+ Stars</option>
+              </select>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Total Meals</div>
-          <div className="text-2xl font-bold text-gray-900">{meals.length}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Available</div>
-          <div className="text-2xl font-bold text-green-600">{meals.filter(m => m.isAvailable).length}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Unavailable</div>
-          <div className="text-2xl font-bold text-red-600">{meals.filter(m => !m.isAvailable).length}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Avg. Rating</div>
-          <div className="text-2xl font-bold text-orange-600">
-            {(meals.reduce((sum, meal) => sum + meal.rating, 0) / meals.length).toFixed(1)}
+          <div className="flex space-x-2">
+            <button
+              onClick={clearFilters}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Clear All
+            </button>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Apply Filters
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Meals Display */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      {/* Meals Grid */}
+      <div className="space-y-4">
         {filteredMeals.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-2">No meals found</div>
-            <p className="text-gray-600">Try adjusting your search or filters</p>
+            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No meals found</h3>
+            <p className="text-gray-500">
+              Try adjusting your search or filters to find what you're looking for
+            </p>
           </div>
         ) : (
-          <>
-            {viewMode === 'grid' ? <GridView /> : <ListView />}
-          </>
+          filteredMeals.map((meal) => (
+            <div key={meal.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="md:flex">
+                {/* Meal Image */}
+                <div className="md:w-48 md:flex-shrink-0">
+                  <img
+                    src={meal.image}
+                    alt={meal.name}
+                    className="w-full h-48 md:h-full object-cover"
+                  />
+                </div>
+
+                {/* Meal Details */}
+                <div className="p-4 flex-1">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{meal.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{meal.description}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleFavorite(meal.id)}
+                      className={`p-2 rounded-full transition-colors ${
+                        favorites.has(meal.id)
+                          ? 'bg-red-100 text-red-600'
+                          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Heart className={`w-5 h-5 ${favorites.has(meal.id) ? 'fill-current' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Chef Info */}
+                  <div className="flex items-center space-x-2 mb-3">
+                    <ChefHat className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">{meal.chef.name}</span>
+                    <div className="flex items-center space-x-1">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="text-sm text-gray-600">{meal.chef.rating}</span>
+                    </div>
+                  </div>
+
+                  {/* Meal Meta */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-sm font-medium">{meal.rating}</span>
+                        <span className="text-sm text-gray-500">({meal.reviewCount})</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">{meal.deliveryTime}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">{meal.location}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {meal.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Price and Action */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-sm text-gray-500">¢</span>
+                      <span className="text-2xl font-bold text-green-600">{meal.price}</span>
+                    </div>
+                    <button
+                      disabled={!meal.available}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        meal.available
+                          ? 'bg-orange-600 text-white hover:bg-orange-700'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>{meal.available ? 'Add to Cart' : 'Unavailable'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

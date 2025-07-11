@@ -88,7 +88,7 @@ const ChefOrders = () => {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'preparing':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'ready':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'completed':
@@ -268,7 +268,7 @@ const ChefOrders = () => {
                     <>
                       <button
                         onClick={() => updateOrderStatus(order.id, 'preparing')}
-                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                        className="flex-1 bg-orange-400 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-orange-500 transition-colors"
                       >
                         Accept & Start Cooking
                       </button>

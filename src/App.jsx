@@ -13,6 +13,7 @@ import AddMeal from './pages/potchef/AddMeal';
 import MyMeals from './pages/potchef/MyMeals';
 import Browse from './pages/potlucky/Browse';
 import ChefOrders from './pages/potchef/ChefOrders';
+import OrderHistory from './pages/potlucky/OrderHistory';
 
 function App() {
   const router = createBrowserRouter([
@@ -52,7 +53,7 @@ function App() {
           children: [
             { index: true, element: <PotluckyDashboard /> },
             { path: "browse", element: <Browse /> },
-            { path: "orders", element: <div>Orders Component</div> },
+            { path: "orders", element: <OrderHistory /> },
             { path: "favorites", element: <div>Favorites Component</div> },
           ]
         },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Grid, List, Edit, Eye, EyeOff, Clock, DollarSign, Star, MapPin, MoreVertical, Search, Filter } from 'lucide-react';
+import { Grid, List, Edit, Eye, EyeOff, Clock, Star, MapPin, MoreVertical, Search } from 'lucide-react';
 
 const Browse = () => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'

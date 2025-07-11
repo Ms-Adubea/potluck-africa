@@ -235,7 +235,10 @@ const ChefOrders = () => {
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">Qty: {order.quantity}</span>
                       <div className="flex items-center space-x-1">
-                        <DollarSign className="w-4 h-4 text-green-600" />
+                        {/* <DollarSign className="w-4 h-4 text-green-600" /> */}
+                         <span className="w-2 text-green-600">
+                    ¢
+                  </span>
                         <span className="font-semibold text-green-600">{order.totalAmount}</span>
                       </div>
                     </div>

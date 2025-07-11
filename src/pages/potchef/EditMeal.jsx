@@ -1,6 +1,6 @@
 // src/components/meals/EditMeal.jsx
 import React, { useState } from 'react';
-import { ArrowLeft, Save, Image, Clock, Users, DollarSign, X } from 'lucide-react';
+import { ArrowLeft, Save, Image, Clock, Users, X } from 'lucide-react';
 
 const EditMeal = ({ meal, onSave, onCancel }) => {
   const [editedMeal, setEditedMeal] = useState({ ...meal });

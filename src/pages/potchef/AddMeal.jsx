@@ -1,70 +1,95 @@
-import React, { useState } from 'react';
-import { Bell, User, Settings, LogOut, Home, ChefHat, ShoppingCart, Heart, Search, CheckCircle, BarChart3, Users, Package, Plus, Camera, Clock, DollarSign, MapPin, X } from 'lucide-react';
-
+import React, { useState } from "react";
+import {
+  CheckCircle,
+  Camera,
+  Clock,
+  MapPin,
+  X,
+} from "lucide-react";
 
 const AddMeal = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    cuisine: '',
-    spiceLevel: 'mild',
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    cuisine: "",
+    spiceLevel: "mild",
     dietaryRestrictions: [],
-    ingredients: '',
-    cookingTime: '',
-    servings: '',
-    location: '',
-    availableFrom: '',
-    availableTo: ''
+    ingredients: "",
+    cookingTime: "",
+    servings: "",
+    location: "",
+    availableFrom: "",
+    availableTo: "",
   });
 
   const [images, setImages] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const categories = [
-    'Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts', 'Beverages'
+    "Breakfast",
+    "Lunch",
+    "Dinner",
+    "Snacks",
+    "Desserts",
+    "Beverages",
   ];
 
   const cuisines = [
-    'African', 'Asian', 'European', 'American', 'Mediterranean', 'Mexican', 'Indian', 'Chinese', 'Italian', 'Other'
+    "African",
+    "Asian",
+    "European",
+    "American",
+    "Mediterranean",
+    "Mexican",
+    "Indian",
+    "Chinese",
+    "Italian",
+    "Other",
   ];
 
   const dietaryOptions = [
-    'Vegetarian', 'Vegan', 'Gluten-Free', 'Halal', 'Kosher', 'Dairy-Free', 'Nut-Free'
+    "Vegetarian",
+    "Vegan",
+    "Gluten-Free",
+    "Halal",
+    "Kosher",
+    "Dairy-Free",
+    "Nut-Free",
   ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleDietaryChange = (option) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       dietaryRestrictions: prev.dietaryRestrictions.includes(option)
-        ? prev.dietaryRestrictions.filter(item => item !== option)
-        : [...prev.dietaryRestrictions, option]
+        ? prev.dietaryRestrictions.filter((item) => item !== option)
+        : [...prev.dietaryRestrictions, option],
     }));
   };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    setImages(prev => [...prev, ...files.slice(0, 5 - prev.length)]);
+    setImages((prev) => [...prev, ...files.slice(0, 5 - prev.length)]);
   };
 
   const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle form submission
-    console.log('Meal data:', formData);
-    console.log('Images:', images);
+    console.log("Meal data:", formData);
+    console.log("Images:", images);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
   };
@@ -82,12 +107,12 @@ const AddMeal = () => {
 
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-6">Add New Meal</h2>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900">Basic Information</h3>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Meal Name *
@@ -124,13 +149,15 @@ const AddMeal = () => {
                   Price (GHS) *
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <span className="absolute left-3 top-2.5 text-gray-400 text-sm">
+                    ¢
+                  </span>
                   <input
                     type="number"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="25.00"
                     step="0.01"
                     required
@@ -168,8 +195,10 @@ const AddMeal = () => {
                   required
                 >
                   <option value="">Select category</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -186,8 +215,10 @@ const AddMeal = () => {
                   required
                 >
                   <option value="">Select cuisine</option>
-                  {cuisines.map(cuisine => (
-                    <option key={cuisine} value={cuisine}>{cuisine}</option>
+                  {cuisines.map((cuisine) => (
+                    <option key={cuisine} value={cuisine}>
+                      {cuisine}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -197,10 +228,12 @@ const AddMeal = () => {
           {/* Images */}
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900">Photos</h3>
-            
+
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600 mb-2">Upload photos of your meal</p>
+              <p className="text-sm text-gray-600 mb-2">
+                Upload photos of your meal
+              </p>
               <input
                 type="file"
                 accept="image/*"
@@ -243,13 +276,13 @@ const AddMeal = () => {
           {/* Details */}
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900">Additional Details</h3>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Spice Level
               </label>
               <div className="flex space-x-4">
-                {['mild', 'medium', 'hot', 'very hot'].map(level => (
+                {["mild", "medium", "hot", "very hot"].map((level) => (
                   <label key={level} className="flex items-center">
                     <input
                       type="radio"
@@ -270,15 +303,15 @@ const AddMeal = () => {
                 Dietary Restrictions
               </label>
               <div className="flex flex-wrap gap-2">
-                {dietaryOptions.map(option => (
+                {dietaryOptions.map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => handleDietaryChange(option)}
                     className={`px-3 py-1 rounded-full text-sm ${
                       formData.dietaryRestrictions.includes(option)
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                        ? "bg-orange-500 text-white"
+                        : "bg-gray-200 text-gray-700"
                     }`}
                   >
                     {option}
@@ -301,7 +334,7 @@ const AddMeal = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cooking Time (minutes)
@@ -338,7 +371,7 @@ const AddMeal = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Available From

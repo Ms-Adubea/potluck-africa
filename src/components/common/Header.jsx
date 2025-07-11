@@ -1,7 +1,22 @@
 // 📁 src/components/common/Header.jsx
-import React, { useState } from 'react';
-import { Bell, User, Settings, LogOut, Home, ChefHat, ShoppingCart, Heart, Search, CheckCircle, BarChart3, Users, Package } from 'lucide-react';
-import navigationConfig from '../../constants/navigationConfig';
+import React, { useState } from "react";
+import {
+  Bell,
+  User,
+  Settings,
+  LogOut,
+  Home,
+  ChefHat,
+  ShoppingCart,
+  Heart,
+  Search,
+  CheckCircle,
+  BarChart3,
+  Users,
+  Package,
+} from "lucide-react";
+import navigationConfig from "../../constants/navigationConfig";
+import { Link } from "react-router-dom";
 
 // Header Component with Profile Dropdown
 const Header = ({ currentRole, setCurrentRole }) => {
@@ -12,9 +27,14 @@ const Header = ({ currentRole, setCurrentRole }) => {
     <header className="bg-white shadow-sm border-b p-4 flex justify-between items-center relative">
       <div className="flex items-center space-x-2">
         <span>{config.avatar}</span>
-        <h1 className="font-semibold text-xl">Potluck</h1>
+        {/* <h1 className="font-semibold text-xl">Potluck</h1> */}
+        <Link to="/">
+        <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text font-semibold text-xl text-transparent">
+          Potluck
+        </span>
+        </Link>
       </div>
-      
+
       <div className="flex space-x-4 items-center">
         <Bell className="w-5 h-5 text-gray-500" />
         <button
@@ -23,21 +43,23 @@ const Header = ({ currentRole, setCurrentRole }) => {
         >
           U
         </button>
-        
+
         {/* Profile Dropdown */}
         {isProfileOpen && (
           <>
-            <div 
-              className="fixed inset-0 z-10" 
+            <div
+              className="fixed inset-0 z-10"
               onClick={() => setIsProfileOpen(false)}
             />
             <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-lg border z-20">
               <div className="p-4 border-b">
                 <p className="font-semibold">John Doe</p>
-                <p className="text-sm text-gray-600 capitalize">{currentRole}</p>
+                <p className="text-sm text-gray-600 capitalize">
+                  {currentRole}
+                </p>
               </div>
               <div className="py-2">
-                <button 
+                <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     // Handle profile navigation
@@ -47,7 +69,7 @@ const Header = ({ currentRole, setCurrentRole }) => {
                   <User className="w-4 h-4 mr-3" />
                   Profile
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     // Handle settings navigation
@@ -64,7 +86,7 @@ const Header = ({ currentRole, setCurrentRole }) => {
                   </label>
                   <select
                     value={currentRole}
-                    onChange={e => {
+                    onChange={(e) => {
                       setCurrentRole(e.target.value);
                       setIsProfileOpen(false);
                     }}
@@ -77,7 +99,7 @@ const Header = ({ currentRole, setCurrentRole }) => {
                   </select>
                 </div>
                 <div className="border-t my-2"></div>
-                <button 
+                <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     // Handle logout
@@ -95,6 +117,5 @@ const Header = ({ currentRole, setCurrentRole }) => {
     </header>
   );
 };
-
 
 export default Header;

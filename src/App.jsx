@@ -12,6 +12,7 @@ import AdminDashboard from './components/roles/AdminDashboard';
 import AddMeal from './pages/potchef/AddMeal';
 import MyMeals from './pages/potchef/MyMeals';
 import Browse from './pages/potlucky/Browse';
+import ChefOrders from './pages/potchef/ChefOrders';
 
 function App() {
   const router = createBrowserRouter([
@@ -42,7 +43,7 @@ function App() {
             { index: true, element: <PotchefDashboard /> },
             { path: "addmeal", element: <AddMeal /> },
             { path: "meals", element: <MyMeals /> },
-            { path: "orders", element: <div>Orders Component</div> },
+            { path: "orders", element: <ChefOrders /> },
           ]
         },
         // Potlucky routes

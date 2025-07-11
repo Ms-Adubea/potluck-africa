@@ -1,53 +1,32 @@
 // 📁 src/pages/Dashboard.jsx
 import React, { useState } from 'react';
-import PotchefDashboard from '../components/roles/PotchefDashboard';
-import PotluckyDashboard from '../components/roles/PotluckyDashboard';
-import FranchiseeDashboard from '../components/roles/FranchiseeDashboard';
-import AdminDashboard from '../components/roles/AdminDashboard';
+import { Outlet, useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import navigationConfig from '../constants/navigationConfig';
-import AddMeal from './potchef/AddMeal';
-
 
 const Dashboard = () => {
-  const [currentRole, setCurrentRole] = useState('potchef');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { role } = useParams();
+  const navigate = useNavigate();
+  const [currentRole, setCurrentRole] = useState(role || 'potchef');
 
-  const renderContent = () => {
-    if (activeTab === 'dashboard') {
-      switch (currentRole) {
-        case 'potchef': return <PotchefDashboard />;
-        case 'potlucky': return <PotluckyDashboard />;
-        case 'franchisee': return <FranchiseeDashboard />;
-        case 'admin': return <AdminDashboard />;
-        default: return null;
-      }
-    }
-    
-    // Handle Add Meal tab for Potchef
-    if (activeTab === 'addmeal' && currentRole === 'potchef') {
-      return <AddMeal />;
-    }
-    
-    // Handle other tabs
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">
-          {navigationConfig[currentRole].navigation.find(nav => nav.id === activeTab)?.label}
-        </h2>
-        <p className="text-gray-600">Content for {activeTab} tab will be implemented here.</p>
-      </div>
-    );
+  // Handle role switching
+  const handleRoleChange = (newRole) => {
+    setCurrentRole(newRole);
+    navigate(`/dashboard/${newRole}`);
   };
+
+  // Redirect to default role if no role is specified
+  React.useEffect(() => {
+    if (!role) {
+      navigate(`/dashboard/${currentRole}`);
+    }
+  }, [role, currentRole, navigate]);
 
   return (
     <DashboardLayout 
       currentRole={currentRole} 
-      setCurrentRole={setCurrentRole} 
-      activeTab={activeTab} 
-      setActiveTab={setActiveTab}
+      setCurrentRole={handleRoleChange}
     >
-      {renderContent()}
+      <Outlet />
     </DashboardLayout>
   );
 };

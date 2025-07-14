@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiLogin } from '../services/auth';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,18 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
+
+  // Role mapping for navigation
+  const getRoleRoute = (role) => {
+    const roleMap = {
+      'potchef': 'potchef',
+      'potlucky': 'potlucky', 
+      'franchise': 'franchisee', // Note: signup uses 'franchise' but dashboard uses 'franchisee'
+      'admin': 'admin'
+    };
+    return roleMap[role] || 'potchef'; // Default to potchef if role not found
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -37,20 +50,29 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const credentials = {
+        email: formData.email,
+        password: formData.password
+      };
       
-      // Success simulation
-      alert('Welcome back! You have successfully logged in.');
+      const response = await apiLogin(credentials);
       
-      // Reset form
-      setFormData({
-        email: '',
-        password: ''
-      });
+      // Store the access token and user data
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('userRole', response.role);
+      localStorage.setItem('userName', response.name);
+      
+      // Get the correct route based on user role
+      const roleRoute = getRoleRoute(response.role);
+      
+      // Redirect to role-specific dashboard
+      navigate(`/dashboard/${roleRoute}`);
       
     } catch (error) {
-      alert('Login failed. Please check your credentials and try again.');
+      console.error('Login error:', error);
+      setErrors({ 
+        general: error.response?.data?.message || 'Login failed. Please check your credentials and try again.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -63,11 +85,10 @@ const Login = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-  };
-
-  const handleClick = (e) => {
-    e.preventDefault();
-    handleSubmit(e);
+    // Clear general error when user starts typing
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: '' }));
+    }
   };
 
   return (
@@ -86,7 +107,14 @@ const Login = () => {
 
         {/* Form */}
         <div className="px-8 pb-8">
-          <div className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* General Error Message */}
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -150,17 +178,16 @@ const Login = () => {
                   Remember me
                 </label>
               </div>
-              <button className="text-sm text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors">
+              <button type="button" className="text-sm text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors">
                 Forgot password?
               </button>
             </div>
 
             {/* Submit Button */}
-            <div
-              onClick={handleClick}
-              className={`w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer text-center ${
-                isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -170,8 +197,8 @@ const Login = () => {
               ) : (
                 'Sign In'
               )}
-            </div>
-          </div>
+            </button>
+          </form>
 
           {/* Divider */}
           <div className="mt-6 mb-6">
@@ -187,7 +214,7 @@ const Login = () => {
 
           {/* Social Login Buttons */}
           <div className="space-y-3">
-            <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors">
+            <button type="button" className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -197,7 +224,7 @@ const Login = () => {
               Continue with Google
             </button>
             
-            <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors">
+            <button type="button" className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
@@ -210,9 +237,9 @@ const Login = () => {
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
               <Link to="/signup">
-              <button className="text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors">
-                Sign up
-              </button>
+                <button type="button" className="text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors">
+                  Sign up
+                </button>
               </Link>
             </p>
           </div>

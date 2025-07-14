@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { ChefHat, Loader2, Eye, EyeOff, Mail, User, Lock, UserCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiRegister } from '../services/auth';
+
 
 const Signup = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -14,18 +17,23 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
   const roles = [
-    { value: 'chef', label: '🍳 Chef', description: 'Cook and share your homemade meals' },
-    { value: 'customer', label: '🍽️ Customer', description: 'Discover and order amazing home-cooked meals' },
-    { value: 'manager', label: '🏢 Manager', description: 'Manage and approve local operations' }
+    { value: 'potchef', label: '🍳 Chef', description: 'Cook and share your homemade meals' },
+    { value: 'potlucky', label: '🍽️ Customer', description: 'Discover and order amazing home-cooked meals' },
+    { value: 'franchise', label: '🏢 Manager', description: 'Manage and approve local operations' }
   ];
 
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.name.trim()) {
-      newErrors.name = 'Full name is required';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+    
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
     }
     
     if (!formData.email.trim()) {
@@ -62,23 +70,23 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const userData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      };
       
-      // Success simulation
+      const response = await apiRegister(userData);
+      
+      // Success
       alert('Account created successfully! Welcome to Potluck!');
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        role: ''
-      });
+      navigate('/login');
       
     } catch (error) {
-      alert('Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      alert(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -110,25 +118,46 @@ const Signup = () => {
         {/* Form */}
         <div className="px-8 pb-8">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name */}
+            {/* First Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                First Name
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
-                  id="name"
+                  id="firstName"
                   type="text"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="John"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
+                    errors.firstName ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
               </div>
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
+            </div>
+
+            {/* Last Name */}
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                Last Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="lastName"
+                  type="text"
+                  placeholder="Doe"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                    errors.lastName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
             </div>
 
             {/* Email */}

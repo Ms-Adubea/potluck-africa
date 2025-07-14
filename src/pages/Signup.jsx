@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { apiRegister } from '../services/auth';
-
+import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle, Camera, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -11,13 +9,14 @@ const Signup = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: ''
+    role: '',
+    avatar: null
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate();
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
   const roles = [
     { value: 'potchef', label: '🍳 Chef', description: 'Cook and share your homemade meals' },
@@ -62,9 +61,7 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!validateForm()) return;
     
     setIsLoading(true);
@@ -75,14 +72,14 @@ const Signup = () => {
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        role: formData.role
+        role: formData.role,
+        avatar: formData.avatar
       };
       
-      const response = await apiRegister(userData);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Success
       alert('Account created successfully! Welcome to Potluck!');
-      navigate('/login');
       
     } catch (error) {
       console.error('Registration error:', error);
@@ -95,10 +92,40 @@ const Signup = () => {
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      setFormData(prev => ({ ...prev, avatar: file }));
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAvatarPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeAvatar = () => {
+    setFormData(prev => ({ ...prev, avatar: null }));
+    setAvatarPreview(null);
   };
 
   return (
@@ -117,7 +144,55 @@ const Signup = () => {
 
         {/* Form */}
         <div className="px-8 pb-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-5">
+            {/* Avatar Upload */}
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-100 to-red-100 border-4 border-white shadow-lg overflow-hidden">
+                  {avatarPreview ? (
+                    <img 
+                      src={avatarPreview} 
+                      alt="Avatar preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <UserCircle className="w-12 h-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Upload Button */}
+                <label htmlFor="avatar" className="absolute -bottom-2 -right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white p-2 rounded-full shadow-lg cursor-pointer hover:from-orange-600 hover:to-red-600 transition-all duration-200">
+                  <Camera className="w-4 h-4" />
+                  <input
+                    id="avatar"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </label>
+                
+                {/* Remove Button */}
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="text-center mb-6">
+              <p className="text-sm text-gray-500">
+                {avatarPreview ? 'Looking good!' : 'Add a profile picture (optional)'}
+              </p>
+            </div>
+
             {/* First Name */}
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -270,7 +345,8 @@ const Signup = () => {
 
             {/* Submit Button */}
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -283,7 +359,7 @@ const Signup = () => {
                 'Create Account'
               )}
             </button>
-          </form>
+          </div>
 
           {/* Sign In Link */}
           <div className="mt-6 text-center">

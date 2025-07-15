@@ -22,6 +22,12 @@ const Header = ({ currentRole }) => {
   
   // Get first name from full name
   const getFirstName = (fullName) => {
+    if (!fullName) return 'User';
+    return fullName.split(' ')[0];
+  };
+
+  // Get first letter for avatar
+  const getInitial = (fullName) => {
     if (!fullName) return 'U';
     const firstName = fullName.split(' ')[0];
     return firstName.charAt(0).toUpperCase();
@@ -53,9 +59,14 @@ const Header = ({ currentRole }) => {
         <Bell className="w-5 h-5 text-gray-500" />
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white relative font-medium"
+          className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
         >
-          {getFirstName(userName)}
+          <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-medium">
+            {getInitial(userName)}
+          </div>
+          <span className="text-sm font-medium text-gray-700">
+            {getFirstName(userName)}
+          </span>
         </button>
 
         {/* Profile Dropdown */}

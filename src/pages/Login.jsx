@@ -15,15 +15,16 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
-  // Role mapping for navigation
+  // Role mapping for navigation - ensure these match your API response
   const getRoleRoute = (role) => {
     const roleMap = {
       'potchef': 'potchef',
       'potlucky': 'potlucky', 
-      'franchise': 'franchisee', // Note: signup uses 'franchise' but dashboard uses 'franchisee'
+      'franchise': 'franchisee', // Handle both variations
+      'franchisee': 'franchisee',
       'admin': 'admin'
     };
-    return roleMap[role] || 'potchef'; // Default to potchef if role not found
+    return roleMap[role] || 'potlucky'; // Default to potlucky if role not found
   };
 
   const validateForm = () => {
@@ -57,29 +58,46 @@ const Login = () => {
       };
       
       const response = await apiLogin(credentials);
-      console.log('API Response:', response)
+      console.log('API Response:', response);
       
-      // Use the correct property name from API response (accessToken, not token)
-      const token = response.accessToken;
+      // Handle different possible token property names
+      const token = response.accessToken || response.token || response.access_token;
       
-      // Set auth token using helper function (this also sets localStorage and axios headers)
+      if (!token) {
+        throw new Error('No access token received from server');
+      }
+      
+      // Set auth token using helper function
       setAuthToken(token);
-      console.log('Token set in localStorage:', localStorage.getItem('token'));
       
-      // Also store user data for later use
+      // Store user data - use consistent key names
       localStorage.setItem('userRole', response.role);
       localStorage.setItem('userName', response.name);
+      localStorage.setItem('userEmail', response.email);
+      
+      // Debug logs
+      console.log('Token stored:', localStorage.getItem('token'));
+      console.log('User role:', response.role);
+      console.log('User name:', response.name);
       
       // Get the correct route based on user role
       const roleRoute = getRoleRoute(response.role);
+      console.log('Navigating to:', `/dashboard/${roleRoute}`);
       
       // Redirect to role-specific dashboard
-      navigate(`/dashboard/${roleRoute}`);
+      navigate(`/dashboard/${roleRoute}`, { replace: true });
       
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Clear any partial auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userEmail');
+      
       setErrors({ 
-        general: error.response?.data?.message || 'Login failed. Please check your credentials and try again.' 
+        general: error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.' 
       });
     } finally {
       setIsLoading(false);

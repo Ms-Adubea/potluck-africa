@@ -5,33 +5,47 @@ import {
   User,
   Settings,
   LogOut,
-  Home,
-  ChefHat,
-  ShoppingCart,
-  Heart,
-  Search,
-  CheckCircle,
-  BarChart3,
-  Users,
-  Package,
 } from "lucide-react";
 import navigationConfig from "../../constants/navigationConfig";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { clearAuthToken } from "../../services/config";
 
 // Header Component with Profile Dropdown
-const Header = ({ currentRole, setCurrentRole }) => {
+const Header = ({ currentRole }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const navigate = useNavigate();
   const config = navigationConfig[currentRole];
+  
+  // Get user info from localStorage
+  const userName = localStorage.getItem('userName') || 'User';
+  const userEmail = localStorage.getItem('userEmail') || '';
+  
+  // Get first name from full name
+  const getFirstName = (fullName) => {
+    if (!fullName) return 'U';
+    const firstName = fullName.split(' ')[0];
+    return firstName.charAt(0).toUpperCase();
+  };
+
+  const handleLogout = () => {
+    // Clear all auth data
+    clearAuthToken();
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    
+    // Redirect to login
+    navigate('/login', { replace: true });
+  };
 
   return (
     <header className="bg-white shadow-sm border-b p-4 flex justify-between items-center relative">
       <div className="flex items-center space-x-2">
         <span>{config.avatar}</span>
-        {/* <h1 className="font-semibold text-xl">Potluck</h1> */}
         <Link to="/">
-        <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text font-semibold text-xl text-transparent">
-          Potluck
-        </span>
+          <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text font-semibold text-xl text-transparent">
+            Potluck
+          </span>
         </Link>
       </div>
 
@@ -39,9 +53,9 @@ const Header = ({ currentRole, setCurrentRole }) => {
         <Bell className="w-5 h-5 text-gray-500" />
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white relative"
+          className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white relative font-medium"
         >
-          U
+          {getFirstName(userName)}
         </button>
 
         {/* Profile Dropdown */}
@@ -53,8 +67,9 @@ const Header = ({ currentRole, setCurrentRole }) => {
             />
             <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-lg border z-20">
               <div className="p-4 border-b">
-                <p className="font-semibold">John Doe</p>
-                <p className="text-sm text-gray-600 capitalize">
+                <p className="font-semibold">{userName}</p>
+                <p className="text-sm text-gray-600">{userEmail}</p>
+                <p className="text-sm text-gray-500 capitalize mt-1">
                   {currentRole}
                 </p>
               </div>
@@ -62,7 +77,8 @@ const Header = ({ currentRole, setCurrentRole }) => {
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
-                    // Handle profile navigation
+                    // Handle profile navigation - you can implement this
+                    console.log('Navigate to profile');
                   }}
                   className="w-full flex items-center px-4 py-2 text-left hover:bg-gray-50"
                 >
@@ -72,7 +88,8 @@ const Header = ({ currentRole, setCurrentRole }) => {
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
-                    // Handle settings navigation
+                    // Handle settings navigation - you can implement this
+                    console.log('Navigate to settings');
                   }}
                   className="w-full flex items-center px-4 py-2 text-left hover:bg-gray-50"
                 >
@@ -80,30 +97,8 @@ const Header = ({ currentRole, setCurrentRole }) => {
                   Settings
                 </button>
                 <div className="border-t my-2"></div>
-                <div className="px-4 py-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Switch Role
-                  </label>
-                  <select
-                    value={currentRole}
-                    onChange={(e) => {
-                      setCurrentRole(e.target.value);
-                      setIsProfileOpen(false);
-                    }}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="potchef">Potchef</option>
-                    <option value="potlucky">Potlucky</option>
-                    <option value="franchisee">Franchisee</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="border-t my-2"></div>
                 <button
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    // Handle logout
-                  }}
+                  onClick={handleLogout}
                   className="w-full flex items-center px-4 py-2 text-left hover:bg-gray-50 text-red-600"
                 >
                   <LogOut className="w-4 h-4 mr-3" />

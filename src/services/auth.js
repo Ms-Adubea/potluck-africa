@@ -1,28 +1,12 @@
 import { apiClient } from "./config"
 
-// export const apiSignup = async (formData) => {
-//     try {
-//         console.log('Sending registration data:', formData);
-//         if (!formData.get('confirmPassword')) {
-//             throw new Error('Confirm password is required');
-//         }
-        
-//         const response = await apiClient.post('/users/register', formData, {
-//             headers: {
-//                 'Content-Type': 'multipart/form-data',
-//             },
-//         });
-//         console.log('Registration response:', response);
-//         return response;
-//     } catch (error) {
-//         console.error('Registration error in service:', error);
-//         throw error;
-//     }
-// };
-
 export const apiRegister = async (userData) => {
   try {
-    const response = await apiClient.post('/users/register', userData);
+    const response = await apiClient.post('/users/register', userData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
     throw error;

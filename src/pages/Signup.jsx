@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle, Camera, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle, Camera, X, Phone } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiRegister } from '../services/auth';
+
 
 const Signup = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     role: '',
@@ -17,11 +20,13 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const navigate = useNavigate();
+
 
   const roles = [
     { value: 'potchef', label: '🍳 Chef', description: 'Cook and share your homemade meals' },
     { value: 'potlucky', label: '🍽️ Customer', description: 'Discover and order amazing home-cooked meals' },
-    { value: 'franchise', label: '🏢 Manager', description: 'Manage and approve local operations' }
+    { value: 'franchisee', label: '🏢 Manager', description: 'Manage and approve local operations' }
   ];
 
   const validateForm = () => {
@@ -39,6 +44,12 @@ const Signup = () => {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^[\+]?[\d\s\-\(\)]+$/.test(formData.phone)) {
+      newErrors.phone = 'Please enter a valid phone number';
     }
     
     if (!formData.password) {
@@ -62,32 +73,36 @@ const Signup = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+  if (!validateForm()) return;
+
+  setIsLoading(true);
+
+  try {
+    const formPayload = new FormData();
+    formPayload.append('firstName', formData.firstName);
+    formPayload.append('lastName', formData.lastName);
+    formPayload.append('email', formData.email);
+    formPayload.append('phone', formData.phone);
+    formPayload.append('password', formData.password);
+    formPayload.append('role', formData.role);
     
-    setIsLoading(true);
-    
-    try {
-      const userData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
-        avatar: formData.avatar
-      };
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      alert('Account created successfully! Welcome to Potluck!');
-      
-    } catch (error) {
-      console.error('Registration error:', error);
-      alert(error.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+    if (formData.avatar) {
+      formPayload.append('avatar', formData.avatar); // This will send the file
     }
-  };
+
+    // Call the real backend API
+    await apiRegister(formPayload);
+
+    alert('Account created successfully! Welcome to Potluck!');
+    navigate('/login');
+  } catch (error) {
+    console.error('Registration error:', error);
+    alert(error.response?.data?.message || 'Registration failed. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -254,6 +269,27 @@ const Signup = () => {
                 />
               </div>
               {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="phone"
+                  type="tel"
+                  placeholder="0554093367"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-orange-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
             </div>
 
             {/* Role Selection */}

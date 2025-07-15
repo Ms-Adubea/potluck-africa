@@ -1,5 +1,6 @@
-// 📁 src/components/common/Header.jsx
-import React, { useState } from "react";
+// 📁 src/components/common/Header.jsx - Updated with proper logout integration
+
+import React, { useState, useEffect } from "react";
 import {
   Bell,
   User,
@@ -9,10 +10,12 @@ import {
 import navigationConfig from "../../constants/navigationConfig";
 import { Link, useNavigate } from "react-router-dom";
 import { clearAuthToken } from "../../services/config";
+import { clearUserData } from "../../services/auth";
 
 // Header Component with Profile Dropdown
 const Header = ({ currentRole }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(null);
   const navigate = useNavigate();
   const config = navigationConfig[currentRole];
   
@@ -20,6 +23,25 @@ const Header = ({ currentRole }) => {
   const userName = localStorage.getItem('userName') || 'User';
   const userEmail = localStorage.getItem('userEmail') || '';
   
+  // Load profile picture on component mount
+  useEffect(() => {
+    const loadProfilePicture = () => {
+      // Try to get profile picture from localStorage first
+      const storedProfilePic = localStorage.getItem('userProfilePicture');
+      if (storedProfilePic) {
+        setProfilePicture(storedProfilePic);
+      } else {
+        // If no stored profile picture, try to get from API or other source
+        const profilePicUrl = localStorage.getItem('userProfilePicUrl');
+        if (profilePicUrl) {
+          setProfilePicture(profilePicUrl);
+        }
+      }
+    };
+
+    loadProfilePicture();
+  }, []);
+
   // Get first name from full name
   const getFirstName = (fullName) => {
     if (!fullName) return 'User';
@@ -34,14 +56,38 @@ const Header = ({ currentRole }) => {
   };
 
   const handleLogout = () => {
-    // Clear all auth data
+    // Clear all auth data using the centralized function
     clearAuthToken();
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
+    clearUserData();
     
     // Redirect to login
     navigate('/login', { replace: true });
+  };
+
+  // Profile Avatar Component
+  const ProfileAvatar = () => {
+    if (profilePicture) {
+      return (
+        <img
+          src={profilePicture}
+          alt="Profile"
+          className="w-8 h-8 rounded-full object-cover"
+          onError={() => {
+            // If image fails to load, remove it from state and localStorage
+            setProfilePicture(null);
+            localStorage.removeItem('userProfilePicture');
+            localStorage.removeItem('userProfilePicUrl');
+          }}
+        />
+      );
+    }
+    
+    // Fallback to initial
+    return (
+      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-medium">
+        {getInitial(userName)}
+      </div>
+    );
   };
 
   return (
@@ -61,9 +107,7 @@ const Header = ({ currentRole }) => {
           onClick={() => setIsProfileOpen(!isProfileOpen)}
           className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
         >
-          <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-medium">
-            {getInitial(userName)}
-          </div>
+          <ProfileAvatar />
           <span className="text-sm font-medium text-gray-700">
             {getFirstName(userName)}
           </span>
@@ -78,9 +122,30 @@ const Header = ({ currentRole }) => {
             />
             <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-lg border z-20">
               <div className="p-4 border-b">
-                <p className="font-semibold">{userName}</p>
-                <p className="text-sm text-gray-600">{userEmail}</p>
-                <p className="text-sm text-gray-500 capitalize mt-1">
+                <div className="flex items-center space-x-3 mb-2">
+                  {/* Larger profile picture in dropdown */}
+                  {profilePicture ? (
+                    <img
+                      src={profilePicture}
+                      alt="Profile"
+                      className="w-12 h-12 rounded-full object-cover"
+                      onError={() => {
+                        setProfilePicture(null);
+                        localStorage.removeItem('userProfilePicture');
+                        localStorage.removeItem('userProfilePicUrl');
+                      }}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-medium text-lg">
+                      {getInitial(userName)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate">{userName}</p>
+                    <p className="text-sm text-gray-600 truncate">{userEmail}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 capitalize">
                   {currentRole}
                 </p>
               </div>

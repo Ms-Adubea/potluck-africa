@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle, Camera, X, Phone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiRegister } from '../services/auth';
+import { apiRegister, storeUserData } from '../services/auth';
+import { storeCompressedProfilePicture } from '../utils/profilePictureUtils';
 
 
 const Signup = () => {
@@ -72,7 +73,7 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+ const handleSubmit = async () => {
   if (!validateForm()) return;
 
   setIsLoading(true);
@@ -87,12 +88,32 @@ const Signup = () => {
     formPayload.append('role', formData.role);
     
     if (formData.avatar) {
-      formPayload.append('avatar', formData.avatar); // This will send the file
+      formPayload.append('avatar', formData.avatar);
     }
 
     // Call the real backend API
-    await apiRegister(formPayload);
+    const response = await apiRegister(formPayload);
+    
+     // Store user data including profile picture
+    const userData = {
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      role: formData.role,
+      // Include profile picture URL from server response if available
+      profilePicture: response.profilePicture || response.profilePictureUrl || response.avatar
+    };
+    
+    // Store profile picture locally for PWA
+    if (formData.avatar) {
+      await storeCompressedProfilePicture(formData.avatar);
+    }
+    
+    // If the backend returns a profile picture URL, store that too
+    if (response.data?.profilePictureUrl) {
+      localStorage.setItem('userProfilePicUrl', response.data.profilePictureUrl);
+    }
 
+    await storeUserData(userData, formData.avatar);
     alert('Account created successfully! Welcome to Potluck!');
     navigate('/login');
   } catch (error) {

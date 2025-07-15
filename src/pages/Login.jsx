@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiLogin } from '../services/auth';
+import { apiLogin, storeUserData, clearUserData } from '../services/auth';
 import { setAuthToken } from '../services/config';
 
 const Login = () => {
@@ -70,15 +70,14 @@ const Login = () => {
       // Set auth token using helper function
       setAuthToken(token);
       
-      // Store user data - use consistent key names
-      localStorage.setItem('userRole', response.role);
-      localStorage.setItem('userName', response.name);
-      localStorage.setItem('userEmail', response.email);
+      // Store user data including profile picture
+      await storeUserData(response);
       
       // Debug logs
       console.log('Token stored:', localStorage.getItem('token'));
       console.log('User role:', response.role);
       console.log('User name:', response.name);
+      console.log('Profile picture stored:', localStorage.getItem('userProfilePicture') || localStorage.getItem('userProfilePicUrl'));
       
       // Get the correct route based on user role
       const roleRoute = getRoleRoute(response.role);
@@ -91,10 +90,7 @@ const Login = () => {
       console.error('Login error:', error);
       
       // Clear any partial auth data
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('userEmail');
+      clearUserData();
       
       setErrors({ 
         general: error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.' 

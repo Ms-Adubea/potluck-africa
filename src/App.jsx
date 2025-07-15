@@ -14,6 +14,8 @@ import MyMeals from './pages/potchef/MyMeals';
 import Browse from './pages/potlucky/Browse';
 import ChefOrders from './pages/potchef/ChefOrders';
 import OrderHistory from './pages/potlucky/OrderHistory';
+import PendingUsers from './pages/admin/PendingUsers';
+import PendingUserDetail from './pages/admin/PendingUserDetail';
 import ProtectedRoute from './components/ProtectedRoutes';
 
 
@@ -170,6 +172,22 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="admin">
                   <AdminDashboard />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "pending-users", 
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <PendingUsers />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "pending-users/:id", 
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <PendingUserDetail />
                 </ProtectedRoute>
               )
             },

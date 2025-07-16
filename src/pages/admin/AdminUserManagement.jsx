@@ -87,7 +87,7 @@ const AdminUserManagement = () => {
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Users className="w-8 h-8 text-blue-600" />
+          <Users className="w-8 h-8 text-green-600" />
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
         </div>
         
@@ -96,7 +96,7 @@ const AdminUserManagement = () => {
           <button
             onClick={fetchUsers}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />

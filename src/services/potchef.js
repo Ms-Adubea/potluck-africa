@@ -11,33 +11,47 @@ export const apiAddMeal = async (formData, config = {}) => {
 };
 
 
-export const apiUpdateMeal = async (id, formData) => {
-  try {
-    const response = await apiClient.patch(`/meals/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error updating listing:', error);
-    throw error;
-  }
-};
+// export const apiUpdateMeal = async (id, formData) => {
+//   try {
+//     const response = await apiClient.patch(`/meals/${id}`, formData, {
+//       headers: {
+//         'Content-Type': 'multipart/form-data'
+//       }
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error updating listing:', error);
+//     throw error;
+//   }
+// };
 
-export const apiGetChefsMeals = async () => {
-  try {
-    const response = await apiClient.get('/meals/mine');
-    // Handle the response structure with count and assets array
-    return {
-      count: response.data?.count || 0,
-      assets: Array.isArray(response.data?.assets) ? response.data.assets : []
-    };
-  } catch (error) {
-    console.error('Error fetching chef meals:', error);
-    throw error;
-  }
-};
+// export const apiGetChefsMeals = async () => {
+//   try {
+//     const response = await apiClient.get('/meals/mine');
+//     // Handle the response structure with count and assets array
+//     return {
+//       count: response.data?.count || 0,
+//       assets: Array.isArray(response.data?.assets) ? response.data.assets : []
+//     };
+//   } catch (error) {
+//     console.error('Error fetching chef meals:', error);
+//     throw error;
+//   }
+// };
+
+// export const apiGetChefsMealById = async (id) => {
+//   try {
+//     const response = await apiClient.get(`/meals/mine/${id}`);
+//     // Handle the response structure with count and assets array
+//     return {
+//       count: response.data?.count || 0,
+//       assets: Array.isArray(response.data?.assets) ? response.data.assets : []
+//     };
+//   } catch (error) {
+//     console.error('Error fetching chef meals:', error);
+//     throw error;
+//   }
+// };
 
 export const apiGetChefOrders = async () => {
   try {
@@ -62,4 +76,64 @@ export const apiGetChefOrders = async () => {
 export const apiApproveorRejectOrder = async (id, data) => {
   const res = await apiClient.patch(`/chef/orders/{orderId}/status`, data);
   return res.data;
+};
+
+export const apiGetChefsMeals = async () => {
+  try {
+    const response = await apiClient.get('/meals/mine');
+    // Handle the direct array response
+    return {
+      count: response.data?.length || 0,
+      assets: Array.isArray(response.data) ? response.data : []
+    };
+  } catch (error) {
+    console.error('Error fetching chef meals:', error);
+    throw error;
+  }
+};
+
+export const apiGetChefsMealById = async (id) => {
+  try {
+    const response = await apiClient.get(`/meals/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching meal by ID:', error);
+    throw error;
+  }
+};
+
+export const apiUpdateMeal = async (id, formData) => {
+  try {
+    const response = await apiClient.patch(`/meals/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating meal:', error);
+    throw error;
+  }
+};
+
+export const apiDeleteMeal = async (id) => {
+  try {
+    const response = await apiClient.delete(`/meals/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting meal:', error);
+    throw error;
+  }
+};
+
+export const apiToggleMealAvailability = async (id, isAvailable) => {
+  try {
+    const response = await apiClient.patch(`/meals/${id}/availability`, {
+      isAvailable
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling meal availability:', error);
+    throw error;
+  }
 };

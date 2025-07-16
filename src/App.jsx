@@ -1,3 +1,4 @@
+// 📁 src/App.jsx
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import HomePage from './pages/Home';
 import Signup from './pages/Signup';
@@ -11,6 +12,8 @@ import FranchiseeDashboard from './components/roles/FranchiseeDashboard';
 import AdminDashboard from './components/roles/AdminDashboard';
 import AddMeal from './pages/potchef/AddMeal';
 import MyMeals from './pages/potchef/MyMeals';
+// import MealDetailView from './pages/potchef/MealDetailView';
+import EditMeal from './pages/potchef/EditMeal';
 import Browse from './pages/potlucky/Browse';
 import ChefOrders from './pages/potchef/ChefOrders';
 import OrderHistory from './pages/potlucky/OrderHistory';
@@ -18,6 +21,7 @@ import PendingUsers from './pages/admin/PendingUsers';
 import PendingUserDetail from './pages/admin/PendingUserDetail';
 import ProtectedRoute from './components/ProtectedRoutes';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
+import MealDetailView from './pages/potchef/MealDeatailView';
 
 
 function App() {
@@ -75,6 +79,22 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="potchef">
                   <MyMeals />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "meals/:id", 
+              element: (
+                <ProtectedRoute requiredRole="potchef">
+                  <MealDetailView />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "meals/:id/edit", 
+              element: (
+                <ProtectedRoute requiredRole="potchef">
+                  <EditMeal />
                 </ProtectedRoute>
               )
             },

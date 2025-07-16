@@ -6,26 +6,30 @@ import {
   MapPin,
   X,
 } from "lucide-react";
+import { apiAddMeal } from "../../services/potchef";
+
 
 const AddMeal = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    mealName: "",
     description: "",
     price: "",
+    servings: "",
     category: "",
     cuisine: "",
-    spiceLevel: "mild",
+    spiceLevel: "Mild",
     dietaryRestrictions: [],
-    ingredients: "",
+    mainIngredients: [],
     cookingTime: "",
-    servings: "",
-    location: "",
+    pickupLocation: "",
     availableFrom: "",
     availableTo: "",
   });
 
   const [images, setImages] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const categories = [
     "Breakfast",
@@ -34,6 +38,7 @@ const AddMeal = () => {
     "Snacks",
     "Desserts",
     "Beverages",
+    "Rice Dishes" // Added to match API example
   ];
 
   const cuisines = [
@@ -46,7 +51,8 @@ const AddMeal = () => {
     "Indian",
     "Chinese",
     "Italian",
-    "Other",
+    "Ghanaian", // Added to match API example
+    "Other"
   ];
 
   const dietaryOptions = [
@@ -56,7 +62,14 @@ const AddMeal = () => {
     "Halal",
     "Kosher",
     "Dairy-Free",
-    "Nut-Free",
+    "Nut-Free"
+  ];
+
+  const spiceLevels = [
+    { value: "Mild", label: "Mild" },
+    { value: "Medium", label: "Medium" },
+    { value: "Hot", label: "Hot" },
+    { value: "Very Hot", label: "Very Hot" }
   ];
 
   const handleInputChange = (e) => {
@@ -76,6 +89,14 @@ const AddMeal = () => {
     }));
   };
 
+  const handleIngredientsChange = (e) => {
+    const ingredients = e.target.value.split(',').map(item => item.trim());
+    setFormData(prev => ({
+      ...prev,
+      mainIngredients: ingredients
+    }));
+  };
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     setImages((prev) => [...prev, ...files.slice(0, 5 - prev.length)]);
@@ -85,14 +106,110 @@ const AddMeal = () => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission
-    console.log("Meal data:", formData);
-    console.log("Images:", images);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError(null);
+
+  try {
+    // Prepare meal data
+    const mealData = {
+      mealName: formData.mealName,
+      description: formData.description,
+      price: Number(formData.price),
+      servings: Number(formData.servings),
+      category: formData.category,
+      cuisine: formData.cuisine,
+      spiceLevel: formData.spiceLevel,
+      dietaryRestrictions: formData.dietaryRestrictions,
+      mainIngredients: formData.mainIngredients,
+      cookingTime: Number(formData.cookingTime),
+      pickupLocation: formData.pickupLocation,
+      availableFrom: new Date(formData.availableFrom).toISOString(),
+      availableTo: new Date(formData.availableTo).toISOString()
+    };
+
+    let dataToSend;
+    let apiCallConfig = {};
+
+    if (images.length > 0) {
+      // Create FormData and append each field individually
+      const formDataToSend = new FormData();
+      
+      // Append non-array fields
+      formDataToSend.append('mealName', mealData.mealName);
+      formDataToSend.append('description', mealData.description);
+      formDataToSend.append('price', mealData.price);
+      formDataToSend.append('servings', mealData.servings);
+      formDataToSend.append('category', mealData.category);
+      formDataToSend.append('cuisine', mealData.cuisine);
+      formDataToSend.append('spiceLevel', mealData.spiceLevel);
+      formDataToSend.append('cookingTime', mealData.cookingTime);
+      formDataToSend.append('pickupLocation', mealData.pickupLocation);
+      formDataToSend.append('availableFrom', mealData.availableFrom);
+      formDataToSend.append('availableTo', mealData.availableTo);
+      
+      // Handle arrays properly - append each item separately
+      mealData.dietaryRestrictions.forEach((restriction, index) => {
+        formDataToSend.append(`dietaryRestrictions[${index}]`, restriction);
+      });
+      
+      mealData.mainIngredients.forEach((ingredient, index) => {
+        formDataToSend.append(`mainIngredients[${index}]`, ingredient);
+      });
+      
+      // Append images
+      images.forEach((image, index) => {
+        formDataToSend.append(`photos`, image);
+      });
+      
+      dataToSend = formDataToSend;
+      apiCallConfig = {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      };
+    } else {
+      // No images, send as regular JSON
+      dataToSend = mealData;
+      apiCallConfig = {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+    }
+
+    // Call the API
+    const response = await apiAddMeal(dataToSend, apiCallConfig);
+    
+    console.log('Meal added successfully:', response);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
-  };
+    
+    // Reset form after successful submission
+    setFormData({
+      mealName: "",
+      description: "",
+      price: "",
+      servings: "",
+      category: "",
+      cuisine: "",
+      spiceLevel: "Mild",
+      dietaryRestrictions: [],
+      mainIngredients: [],
+      cookingTime: "",
+      pickupLocation: "",
+      availableFrom: "",
+      availableTo: "",
+    });
+    setImages([]);
+  } catch (err) {
+    console.error('Error adding meal:', err);
+    setError(err.response?.data?.message || 'Failed to add meal. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="space-y-6">
@@ -101,6 +218,15 @@ const AddMeal = () => {
           <div className="flex items-center">
             <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
             <span className="text-green-800">Meal added successfully!</span>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <X className="w-5 h-5 text-red-600 mr-2" />
+            <span className="text-red-800">{error}</span>
           </div>
         </div>
       )}
@@ -119,8 +245,8 @@ const AddMeal = () => {
               </label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="mealName"
+                value={formData.mealName}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="e.g., Jollof Rice with Grilled Chicken"
@@ -282,17 +408,17 @@ const AddMeal = () => {
                 Spice Level
               </label>
               <div className="flex space-x-4">
-                {["mild", "medium", "hot", "very hot"].map((level) => (
-                  <label key={level} className="flex items-center">
+                {spiceLevels.map((level) => (
+                  <label key={level.value} className="flex items-center">
                     <input
                       type="radio"
                       name="spiceLevel"
-                      value={level}
-                      checked={formData.spiceLevel === level}
+                      value={level.value}
+                      checked={formData.spiceLevel === level.value}
                       onChange={handleInputChange}
                       className="mr-2"
                     />
-                    <span className="text-sm capitalize">{level}</span>
+                    <span className="text-sm capitalize">{level.label}</span>
                   </label>
                 ))}
               </div>
@@ -322,13 +448,13 @@ const AddMeal = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Main Ingredients
+                Main Ingredients (comma separated)
               </label>
               <input
                 type="text"
-                name="ingredients"
-                value={formData.ingredients}
-                onChange={handleInputChange}
+                name="mainIngredients"
+                value={formData.mainIngredients.join(', ')}
+                onChange={handleIngredientsChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="e.g., Rice, Chicken, Vegetables, Tomatoes"
               />
@@ -361,8 +487,8 @@ const AddMeal = () => {
                   <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    name="location"
-                    value={formData.location}
+                    name="pickupLocation"
+                    value={formData.pickupLocation}
                     onChange={handleInputChange}
                     className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="e.g., East Legon, Accra"
@@ -374,27 +500,29 @@ const AddMeal = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Available From
+                  Available From *
                 </label>
                 <input
-                  type="time"
+                  type="datetime-local"
                   name="availableFrom"
                   value={formData.availableFrom}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Available To
+                  Available To *
                 </label>
                 <input
-                  type="time"
+                  type="datetime-local"
                   name="availableTo"
                   value={formData.availableTo}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  required
                 />
               </div>
             </div>
@@ -404,9 +532,10 @@ const AddMeal = () => {
           <div className="flex space-x-4">
             <button
               type="submit"
-              className="flex-1 bg-orange-500 text-white py-3 px-6 rounded-lg hover:bg-orange-600 transition-colors"
+              disabled={isSubmitting}
+              className={`flex-1 bg-orange-500 text-white py-3 px-6 rounded-lg hover:bg-orange-600 transition-colors ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              Add Meal
+              {isSubmitting ? 'Adding...' : 'Add Meal'}
             </button>
             <button
               type="button"

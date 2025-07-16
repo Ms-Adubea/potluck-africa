@@ -1,5 +1,23 @@
 import { apiClient } from "./config";
 
+export const apiGetAllMeals = async () => {
+  try {
+    const response = await apiClient.get('/meals');
+    
+    // Handle both possible response structures
+    if (Array.isArray(response.data)) {
+      return response.data; // If API returns array directly
+    } else if (response.data?.produce) {
+      return response.data.produce; // If API returns { produce: [...] }
+    }
+    
+    return []; // Default fallback
+  } catch (error) {
+    console.error('Error fetching all meals:', error);
+    throw error;
+  }
+};
+
 export const apiAddReview = async (userData) => {
   try {
     const response = await apiClient.post(`/meals/{mealId}/review`, userData);

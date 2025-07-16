@@ -17,6 +17,7 @@ import OrderHistory from './pages/potlucky/OrderHistory';
 import PendingUsers from './pages/admin/PendingUsers';
 import PendingUserDetail from './pages/admin/PendingUserDetail';
 import ProtectedRoute from './components/ProtectedRoutes';
+import AdminUserManagement from './pages/admin/AdminUserManagement';
 
 
 function App() {
@@ -195,7 +196,7 @@ function App() {
               path: "users", 
               element: (
                 <ProtectedRoute requiredRole="admin">
-                  <div>Users Component</div>
+                  <AdminUserManagement />
                 </ProtectedRoute>
               )
             },

@@ -156,7 +156,7 @@ const AdminDashboard = () => {
             </div>
             <button
               onClick={() => navigate('/dashboard/admin/pending-users')}
-              className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <span>View All</span>
               <ArrowRight className="w-4 h-4" />

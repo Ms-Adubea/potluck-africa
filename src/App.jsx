@@ -23,7 +23,7 @@ import AdminUserManagement from './pages/admin/AdminUserManagement';
 import MealDetailView from './pages/potchef/MealDeatailView';
 import PendingApproval from './pages/PendingApproval';
 import OAuthSuccess from './pages/OAuthSuccess';
-// import OAuthSuccess from './components/auth/OAuthSuccess'; // New component
+
 
 function App() {
   const router = createBrowserRouter([

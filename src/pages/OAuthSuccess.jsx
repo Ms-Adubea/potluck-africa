@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 // import { storeUserData, clearUserData, fetchUserProfile } from '../../services/auth';
 import { setAuthToken } from '../services/config';
-import { clearUserData, storeUserData } from '../services/auth';
+import { clearUserData, fetchUserProfile, storeUserData } from '../services/auth';
 // import { setAuthToken } from '../../services/config';
 
 const OAuthSuccess = () => {

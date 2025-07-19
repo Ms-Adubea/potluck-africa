@@ -81,10 +81,17 @@ export const apiApproveorRejectOrder = async (id, data) => {
 export const apiGetChefsMeals = async () => {
   try {
     const response = await apiClient.get('/meals/mine');
-    // Handle the direct array response
+    // For array response
+    if (Array.isArray(response.data)) {
+      return {
+        count: response.data.length,
+        assets: response.data
+      };
+    }
+    // For object response with assets property
     return {
-      count: response.data?.length || 0,
-      assets: Array.isArray(response.data) ? response.data : []
+      count: response.data?.count || 0,
+      assets: Array.isArray(response.data?.assets) ? response.data.assets : []
     };
   } catch (error) {
     console.error('Error fetching chef meals:', error);

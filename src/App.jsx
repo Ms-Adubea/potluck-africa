@@ -12,7 +12,6 @@ import FranchiseeDashboard from './components/roles/FranchiseeDashboard';
 import AdminDashboard from './components/roles/AdminDashboard';
 import AddMeal from './pages/potchef/AddMeal';
 import MyMeals from './pages/potchef/MyMeals';
-// import MealDetailView from './pages/potchef/MealDetailView';
 import EditMeal from './pages/potchef/EditMeal';
 import Browse from './pages/potlucky/Browse';
 import ChefOrders from './pages/potchef/ChefOrders';
@@ -22,7 +21,9 @@ import PendingUserDetail from './pages/admin/PendingUserDetail';
 import ProtectedRoute from './components/ProtectedRoutes';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
 import MealDetailView from './pages/potchef/MealDeatailView';
-
+import PendingApproval from './pages/PendingApproval';
+import OAuthSuccess from './pages/OAuthSuccess';
+// import OAuthSuccess from './components/auth/OAuthSuccess'; // New component
 
 function App() {
   const router = createBrowserRouter([
@@ -37,6 +38,15 @@ function App() {
     {
       path: "/login",
       element: <Login />,
+    },
+    {
+      path: "/pending",
+      element: <PendingApproval />,
+    },
+    // Add OAuth success route
+    {
+      path: "/oauth-success",
+      element: <OAuthSuccess />,
     },
     {
       path: "/potchef-onboarding",

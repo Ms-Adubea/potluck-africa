@@ -52,19 +52,22 @@ export const fetchUserProfile = async () => {
 // Handle Google OAuth callback - process token from URL
 export const handleGoogleCallback = async (token) => {
   try {
-    // Decode token to get basic info (optional, for debugging)
+    // ✅ Store token immediately
+    setAuthToken(token); // This sets localStorage and Axios headers
+
     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
     console.log('Token payload:', tokenPayload);
     
-    // Fetch full user data from backend
+    // Now the token will be used in the request
     const userData = await fetchUserProfile();
-    
+
     return userData;
   } catch (error) {
     console.error('Error handling Google callback:', error);
     throw error;
   }
 };
+
 
 // Helper function to store user data after successful login
 export const storeUserData = async (userData, avatarFile = null) => {

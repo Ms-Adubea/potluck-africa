@@ -2,10 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
-// import { storeUserData, clearUserData, fetchUserProfile } from '../../services/auth';
-import { setAuthToken } from '../services/config';
 import { clearUserData, fetchUserProfile, storeUserData } from '../services/auth';
-// import { setAuthToken } from '../../services/config';
+import { setAuthToken } from '../services/config';
+
 
 const OAuthSuccess = () => {
   const [status, setStatus] = useState('processing'); // 'processing', 'success', 'error', 'pending'

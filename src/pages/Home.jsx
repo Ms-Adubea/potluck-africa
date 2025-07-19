@@ -8,7 +8,7 @@ import {
   Home,
   Store,
 } from "lucide-react";
-import heroImage from "../assets/images/potluck-hero.jpeg";
+import heroImage from "../assets/images/potluck-home.png";
 import { Link } from "react-router-dom";
 
 const HomePage = () => {
@@ -33,11 +33,11 @@ const HomePage = () => {
         {/* Content */}
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-6xl md:text-8xl font-bold text-white mb-6 tracking-wide">
+            {/* <h1 className="text-6xl md:text-8xl font-bold text-white mb-6 tracking-wide">
               <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
                 Potluck
               </span>
-            </h1>
+            </h1> */}
 
             <p className="text-xl md:text-2xl text-white mb-4 font-medium">
               Connecting Ghanaian communities through homemade meals.

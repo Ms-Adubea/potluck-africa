@@ -11,6 +11,17 @@ export const apiGetAllUsers = async () => {
   }
 };
 
+// GET one user by ID (fixed the URL template)
+export const apiGetOneUser = async (id) => {
+  try {
+    const response = await apiClient.get(`/users/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
 // DELETE a user by ID
 export const apiDeleteUser = async (id) => {
   try {
@@ -21,7 +32,6 @@ export const apiDeleteUser = async (id) => {
     throw error;
   }
 };
-
 
 // GET pending user
 export const apiGetAllPendingUsers = async () => {

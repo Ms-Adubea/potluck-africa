@@ -20,17 +20,20 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { apiGetAllPendingUsers, apiApproveUser } from '../../services/admin';
+import { apiGetAllPendingUsers, apiApproveUser, apiGetAllUsers } from '../../services/admin';
 
 const AdminDashboard = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [processingUser, setProcessingUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPendingUsers();
+    fetchTotalUsers();
   }, []);
 
   const fetchPendingUsers = async () => {
@@ -43,6 +46,19 @@ const AdminDashboard = () => {
       console.error('Error fetching pending users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTotalUsers = async () => {
+    try {
+      setStatsLoading(true);
+      const data = await apiGetAllUsers();
+      // Use totalUsers from the API response if available, otherwise count the users array
+      setTotalUsers(data.totalUsers || (Array.isArray(data.users) ? data.users.length : 0));
+    } catch (error) {
+      console.error('Error fetching total users:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -112,7 +128,11 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold">1,234</p>
+              {statsLoading ? (
+                <div className="animate-pulse h-8 w-16 bg-gray-200 rounded"></div>
+              ) : (
+                <p className="text-2xl font-bold">{totalUsers.toLocaleString()}</p>
+              )}
             </div>
             <Users className="w-8 h-8 text-indigo-500" />
           </div>

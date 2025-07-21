@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle, Camera, X, Phone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiRegister, storeUserData } from '../services/auth';
-import { storeCompressedProfilePicture } from '../utils/profilePictureUtils';
+import { apiRegister, storeUserData } from '../../services/auth';
+import { storeCompressedProfilePicture } from '../../utils/profilePictureUtils';
 
 
 const AddUsers = () => {
@@ -25,9 +25,9 @@ const AddUsers = () => {
 
 
   const roles = [
-    { value: 'potchef', label: '🍳 Chef', description: 'Cook and share your homemade meals' },
-    { value: 'potlucky', label: '🍽️ Customer', description: 'Discover and order amazing home-cooked meals' },
-    { value: 'franchisee', label: '🏢 Manager', description: 'Manage and approve local operations' }
+    { value: 'potchef', label: '🍳 Chef/Potchef', description: 'Cook and share your homemade meals' },
+    { value: 'potlucky', label: '🍽️ Customer/Potlucky', description: 'Discover and order amazing home-cooked meals' },
+    { value: 'franchisee', label: '🏢 Manager/Franchisee', description: 'Manage and approve local operations' }
   ];
 
   const validateForm = () => {

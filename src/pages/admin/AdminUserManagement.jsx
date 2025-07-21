@@ -10,6 +10,7 @@ import {
 // import { apiGetAllUsers, apiDeleteUser, apiGetUser } from './api';
 import UserDetailView from './UserDetailView';
 import { apiDeleteUser, apiGetAllUsers, apiGetUserById } from '../../services/admin';
+import { Link } from 'react-router-dom';
 
 const AdminUserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -183,10 +184,12 @@ const AdminUserManagement = () => {
               </div>
             </div>
             
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+            <Link to="/dashboard/admin/add-user">
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm">
               <Plus className="w-4 h-4" />
               Add User
             </button>
+            </Link>
           </div>
 
           {/* Stats Cards */}

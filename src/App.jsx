@@ -23,6 +23,7 @@ import ProtectedRoute from './components/ProtectedRoutes';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
 import MealDetailView from './pages/potchef/MealDeatailView';
 import PotluckyFavorites from './pages/potlucky/PotluckyFavorites';
+import AddUsers from './pages/admin/AddUsers';
 
 
 function App() {
@@ -223,6 +224,14 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="admin">
                   <AdminUserManagement />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "add-user", 
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <AddUsers />
                 </ProtectedRoute>
               )
             },

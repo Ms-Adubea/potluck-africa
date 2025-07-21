@@ -79,3 +79,21 @@ export const apiGetUserOrders = async () => {
     throw error;
   }
 };
+
+export const apiGetFavoriteMeals = async () => {
+  try {
+    const response = await apiClient.get(`/meals/${id}/favorites`);
+    
+    // Handle both possible response structures
+    if (Array.isArray(response.data)) {
+      return response.data; // If API returns array directly
+    } else if (response.data?.produce) {
+      return response.data.produce; // If API returns { produce: [...] }
+    }
+    
+    return []; // Default fallback
+  } catch (error) {
+    console.error('Error fetching all meals:', error);
+    throw error;
+  }
+};

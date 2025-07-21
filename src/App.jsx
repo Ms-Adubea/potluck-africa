@@ -12,6 +12,7 @@ import FranchiseeDashboard from './components/roles/FranchiseeDashboard';
 import AdminDashboard from './components/roles/AdminDashboard';
 import AddMeal from './pages/potchef/AddMeal';
 import MyMeals from './pages/potchef/MyMeals';
+// import MealDetailView from './pages/potchef/MealDetailView';
 import EditMeal from './pages/potchef/EditMeal';
 import Browse from './pages/potlucky/Browse';
 import ChefOrders from './pages/potchef/ChefOrders';
@@ -21,8 +22,7 @@ import PendingUserDetail from './pages/admin/PendingUserDetail';
 import ProtectedRoute from './components/ProtectedRoutes';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
 import MealDetailView from './pages/potchef/MealDeatailView';
-import PendingApproval from './pages/PendingApproval';
-import OAuthSuccess from './pages/OAuthSuccess';
+import PotluckyFavorites from './pages/potlucky/PotluckyFavorites';
 
 
 function App() {
@@ -40,14 +40,10 @@ function App() {
       element: <Login />,
     },
     {
-      path: "/pending",
-      element: <PendingApproval />,
+      path: "/favorites",
+      element: <PotluckyFavorites />,
     },
-    // Add OAuth success route
-    {
-      path: "/oauth-success",
-      element: <OAuthSuccess />,
-    },
+
     {
       path: "/potchef-onboarding",
       element: (

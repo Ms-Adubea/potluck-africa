@@ -1,37 +1,23 @@
 import { apiClient } from "./config";
 
-// GET all users from the server
+// GET all users
 export const apiGetAllUsers = async () => {
-  try {
-    const response = await apiClient.get('/admin/users');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching users:', error.response?.data || error.message);
-    throw error;
-  }
+  const response = await apiClient.get('/admin/users');
+  return response.data;
 };
 
-// GET one user by ID (fixed the URL template)
-export const apiGetOneUser = async (id) => {
-  try {
-    const response = await apiClient.get(`/users/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching user:', error.response?.data || error.message);
-    throw error;
-  }
+// GET one user
+export const apiGetUserById = async (userId) => {
+  const response = await apiClient.get(`/users/${userId}`);
+  return response.data;
 };
 
-// DELETE a user by ID
-export const apiDeleteUser = async (id) => {
-  try {
-    const response = await apiClient.delete(`/admin/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting user:', error.response?.data || error.message);
-    throw error;
-  }
+// DELETE user
+export const apiDeleteUser = async (userId) => {
+  const response = await apiClient.delete(`/admin/${userId}`);
+  return response.data;
 };
+
 
 // GET pending user
 export const apiGetAllPendingUsers = async () => {

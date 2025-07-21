@@ -5,7 +5,7 @@ import { apiRegister, storeUserData } from '../services/auth';
 import { storeCompressedProfilePicture } from '../utils/profilePictureUtils';
 
 
-const Signup = () => {
+const AddUsers = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -25,9 +25,9 @@ const Signup = () => {
 
 
   const roles = [
-    { value: 'potchef', label: '🍳 Chef/Potchef', description: 'Cook and share your homemade meals' },
-    { value: 'potlucky', label: '🍽️ Customer/Potlucky', description: 'Discover and order amazing home-cooked meals' },
-    // { value: 'franchisee', label: '🏢 Manager', description: 'Manage and approve local operations' }
+    { value: 'potchef', label: '🍳 Chef', description: 'Cook and share your homemade meals' },
+    { value: 'potlucky', label: '🍽️ Customer', description: 'Discover and order amazing home-cooked meals' },
+    { value: 'franchisee', label: '🏢 Manager', description: 'Manage and approve local operations' }
   ];
 
   const validateForm = () => {
@@ -435,4 +435,4 @@ const Signup = () => {
   );
 };
 
-export default Signup;
+export default AddUsers;

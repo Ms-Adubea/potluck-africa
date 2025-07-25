@@ -53,22 +53,34 @@ export const apiAddMeal = async (formData, config = {}) => {
 //   }
 // };
 
-export const apiGetChefOrders = async () => {
+// export const apiGetChefOrders = async () => {
+//   try {
+//     console.log("Fetching chef's orders from /chef/orders");
+//     const response = await apiClient.get('/chef/orders');
+//     console.log("Get chef orders response:", response);
+//     console.log("Response data:", response.data);
+//     return response.data; // Make sure to return response.data consistently
+//   } catch (error) {
+//     console.error("Get chef orders failed:", error);
+//     console.error("Error details:", {
+//       message: error.message,
+//       status: error.response?.status,
+//       statusText: error.response?.statusText,
+//       data: error.response?.data,
+//       headers: error.response?.headers
+//     });
+//     throw error;
+//   }
+// };
+
+
+// 📁 src/services/potchef.js
+export const apiGetChefOrders = async (page = 1) => {
   try {
-    console.log("Fetching chef's orders from /chef/orders");
-    const response = await apiClient.get('/chef/orders');
-    console.log("Get chef orders response:", response);
-    console.log("Response data:", response.data);
-    return response.data; // Make sure to return response.data consistently
+    const response = await apiClient.get(`/chef/orders?page=${page}`);
+    return response.data; // contains page, totalPages, orders, etc.
   } catch (error) {
-    console.error("Get chef orders failed:", error);
-    console.error("Error details:", {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      headers: error.response?.headers
-    });
+    console.error("❌ Failed to fetch chef orders:", error);
     throw error;
   }
 };

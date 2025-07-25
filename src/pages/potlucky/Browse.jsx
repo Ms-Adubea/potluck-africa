@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Star, Clock, DollarSign, Heart, ShoppingCart, ChefHat, X, SlidersHorizontal } from 'lucide-react';
+import { apiGetAllMeals } from '../../services/potlucky';
 
 const Browse = () => {
   const [meals, setMeals] = useState([]);
@@ -19,126 +20,8 @@ const Browse = () => {
     deliveryTime: ''
   });
 
-  // Mock data - replace with actual API call
-  const mockMeals = [
-    {
-      id: 'meal-001',
-      name: 'Authentic Jollof Rice with Grilled Chicken',
-      description: 'Perfectly spiced West African jollof rice served with tender grilled chicken and plantain',
-      price: 25.99,
-      cuisine: 'West African',
-      rating: 4.8,
-      reviewCount: 124,
-      deliveryTime: '30-45 min',
-      location: 'East Legon, Accra',
-      chef: {
-        name: 'Mama Akosua',
-        rating: 4.9,
-        experience: '5+ years'
-      },
-      image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop',
-      available: true,
-      tags: ['spicy', 'gluten-free', 'popular']
-    },
-    {
-      id: 'meal-002',
-      name: 'Traditional Waakye with Fish',
-      description: 'Authentic Ghanaian waakye with fresh fish, boiled eggs, and spicy pepper sauce',
-      price: 18.50,
-      cuisine: 'Ghanaian',
-      rating: 4.6,
-      reviewCount: 89,
-      deliveryTime: '25-35 min',
-      location: 'Tema, Accra',
-      chef: {
-        name: 'Chef Kwame',
-        rating: 4.7,
-        experience: '3+ years'
-      },
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
-      available: true,
-      tags: ['traditional', 'protein-rich']
-    },
-    {
-      id: 'meal-003',
-      name: 'Spicy Kelewele with Groundnut Soup',
-      description: 'Crispy spiced plantain cubes served with rich groundnut soup and your choice of meat',
-      price: 22.00,
-      cuisine: 'West African',
-      rating: 4.7,
-      reviewCount: 67,
-      deliveryTime: '40-50 min',
-      location: 'Kumasi',
-      chef: {
-        name: 'Auntie Ama',
-        rating: 4.8,
-        experience: '7+ years'
-      },
-      image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&h=300&fit=crop',
-      available: true,
-      tags: ['spicy', 'vegetarian-option', 'comfort-food']
-    },
-    {
-      id: 'meal-004',
-      name: 'Fresh Banku with Grilled Tilapia',
-      description: 'Freshly prepared banku served with perfectly grilled tilapia and hot pepper sauce',
-      price: 32.75,
-      cuisine: 'Ghanaian',
-      rating: 4.9,
-      reviewCount: 156,
-      deliveryTime: '35-45 min',
-      location: 'Takoradi',
-      chef: {
-        name: 'Chef Kojo',
-        rating: 4.9,
-        experience: '8+ years'
-      },
-      image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
-      available: true,
-      tags: ['fresh', 'high-protein', 'chef-special']
-    },
-    {
-      id: 'meal-005',
-      name: 'Red Red with Fried Plantain',
-      description: 'Delicious red red (black-eyed peas stew) with perfectly fried sweet plantains',
-      price: 15.99,
-      cuisine: 'Ghanaian',
-      rating: 4.5,
-      reviewCount: 92,
-      deliveryTime: '20-30 min',
-      location: 'Tamale',
-      chef: {
-        name: 'Sister Efua',
-        rating: 4.6,
-        experience: '4+ years'
-      },
-      image: 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop',
-      available: false,
-      tags: ['vegetarian', 'budget-friendly', 'comfort-food']
-    },
-    {
-      id: 'meal-006',
-      name: 'Fufu with Light Soup',
-      description: 'Traditional fufu served with aromatic light soup containing assorted meat and fish',
-      price: 28.50,
-      cuisine: 'West African',
-      rating: 4.8,
-      reviewCount: 134,
-      deliveryTime: '45-55 min',
-      location: 'East Legon, Accra',
-      chef: {
-        name: 'Chef Adjoa',
-        rating: 4.8,
-        experience: '6+ years'
-      },
-      image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
-      available: true,
-      tags: ['traditional', 'filling', 'authentic']
-    }
-  ];
-
-  const cuisineTypes = ['All', 'Ghanaian', 'West African', 'Nigerian', 'Ivorian'];
-  const locations = ['All', 'East Legon, Accra', 'Tema, Accra', 'Kumasi', 'Takoradi', 'Tamale'];
+  const cuisineTypes = ['All', 'Ghanaian', 'West African', 'Nigerian', 'Ivorian', 'African'];
+  const locations = ['All', 'East Legon, Accra', 'Tema, Accra', 'Kumasi', 'Takoradi', 'Tamale', 'Lapaz, Accra', 'Madina, Accra'];
   const priceRanges = [
     { label: 'All', min: '', max: '' },
     { label: 'Under ¢20', min: '', max: '20' },
@@ -147,13 +30,51 @@ const Browse = () => {
     { label: 'Over ¢40', min: '40', max: '' }
   ];
 
+  // Transform API data to match component expectations
+  const transformMealData = (apiMeal) => {
+    return {
+      id: apiMeal.id,
+      name: apiMeal.mealName,
+      description: apiMeal.description,
+      price: apiMeal.price,
+      cuisine: apiMeal.cuisine,
+      location: apiMeal.pickupLocation,
+      rating: apiMeal.averageRating || 0,
+      reviewCount: apiMeal.reviewCount || 0,
+      available: apiMeal.status === 'Available' || apiMeal.status === 'Pending', // Adjust based on your business logic
+      deliveryTime: `${apiMeal.cookingTime} mins`,
+      image: apiMeal.photos && apiMeal.photos.length > 0 ? apiMeal.photos[0] : '/api/placeholder/300/200', // Default placeholder
+      chef: {
+        name: `${apiMeal.createdBy.firstName} ${apiMeal.createdBy.lastName}`,
+        rating: 4.5 // Default chef rating since not provided
+      },
+      tags: [
+        apiMeal.category,
+        apiMeal.spiceLevel,
+        ...apiMeal.dietaryRestrictions,
+        `${apiMeal.servings} serving${apiMeal.servings > 1 ? 's' : ''}`
+      ].filter(Boolean)
+    };
+  };
+
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setMeals(mockMeals);
-      setFilteredMeals(mockMeals);
-      setLoading(false);
-    }, 1000);
+    const fetchMeals = async () => {
+      try {
+        const response = await apiGetAllMeals();
+        console.log('API Response:', response); // Debug log
+        
+        // Transform the data to match component expectations
+        const transformedMeals = response.map(transformMealData);
+        setMeals(transformedMeals);
+        setFilteredMeals(transformedMeals);
+      } catch (error) {
+        console.error('Failed to fetch meals:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeals();
   }, []);
 
   useEffect(() => {
@@ -406,6 +327,9 @@ const Browse = () => {
                     src={meal.image}
                     alt={meal.name}
                     className="w-full h-48 md:h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=No+Image';
+                    }}
                   />
                 </div>
 
@@ -443,7 +367,7 @@ const Browse = () => {
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm font-medium">{meal.rating}</span>
+                        <span className="text-sm font-medium">{meal.rating || 'New'}</span>
                         <span className="text-sm text-gray-500">({meal.reviewCount})</span>
                       </div>
                       <div className="flex items-center space-x-1">

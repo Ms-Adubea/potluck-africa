@@ -4,11 +4,13 @@ export const apiGetAllMeals = async () => {
   try {
     const response = await apiClient.get('/meals');
     
-    // Handle both possible response structures
-    if (Array.isArray(response.data)) {
+    // Handle the actual API response structure
+    if (response.data?.meals && Array.isArray(response.data.meals)) {
+      return response.data.meals; // Return the meals array from the response
+    } else if (Array.isArray(response.data)) {
       return response.data; // If API returns array directly
     } else if (response.data?.produce) {
-      return response.data.produce; // If API returns { produce: [...] }
+      return response.data.produce; // Legacy fallback
     }
     
     return []; // Default fallback

@@ -73,10 +73,19 @@ export const apiGetChefOrders = async () => {
   }
 };
 
-export const apiApproveorRejectOrder = async (id, data) => {
-  const res = await apiClient.patch(`/chef/orders/{orderId}/status`, data);
-  return res.data;
+
+export const apiUpdateOrderStatus = async (orderId, newStatus) => {
+  try {
+    const response = await apiClient.patch(`/chef/orders/${orderId}/status`, {
+      status: newStatus,
+    });
+    return response.data.order;
+  } catch (error) {
+    console.error(`Failed to update status for order ${orderId}:`, error);
+    throw error;
+  }
 };
+
 
 export const apiGetChefsMeals = async () => {
   try {

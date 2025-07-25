@@ -1,87 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Phone, User, DollarSign, CheckCircle, XCircle, AlertCircle, ChefHat, Package } from 'lucide-react';
+import { Clock, MapPin, Phone, User, CheckCircle, XCircle, AlertCircle, ChefHat, Package } from 'lucide-react';
+import { apiGetChefOrders, apiUpdateOrderStatus } from '../../services/potchef';
 
 const ChefOrders = () => {
   const [orders, setOrders] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
 
-  // Mock data - replace with actual API call
-  const mockOrders = [
-    {
-      id: 'ORD-001',
-      customerName: 'Sarah Johnson',
-      customerPhone: '+1-555-0123',
-      mealName: 'Jollof Rice with Grilled Chicken',
-      quantity: 2,
-      totalAmount: 25.99,
-      status: 'pending',
-      orderTime: '2025-01-15T10:30:00',
-      deliveryAddress: '123 Main St, Accra',
-      specialInstructions: 'Extra spicy please, no onions',
-      estimatedDelivery: '2025-01-15T12:00:00'
-    },
-    {
-      id: 'ORD-002',
-      customerName: 'Michael Chen',
-      customerPhone: '+1-555-0456',
-      mealName: 'Waakye with Fish',
-      quantity: 1,
-      totalAmount: 18.50,
-      status: 'preparing',
-      orderTime: '2025-01-15T11:15:00',
-      deliveryAddress: '456 Oak Ave, East Legon',
-      specialInstructions: '',
-      estimatedDelivery: '2025-01-15T13:30:00'
-    },
-    {
-      id: 'ORD-003',
-      customerName: 'Emma Williams',
-      customerPhone: '+1-555-0789',
-      mealName: 'Banku with Tilapia',
-      quantity: 3,
-      totalAmount: 42.75,
-      status: 'ready',
-      orderTime: '2025-01-15T09:45:00',
-      deliveryAddress: '789 Pine Rd, Tema',
-      specialInstructions: 'Please include extra pepper sauce',
-      estimatedDelivery: '2025-01-15T11:45:00'
-    },
-    {
-      id: 'ORD-004',
-      customerName: 'David Asante',
-      customerPhone: '+233-24-123-4567',
-      mealName: 'Kelewele with Plantain',
-      quantity: 2,
-      totalAmount: 15.00,
-      status: 'completed',
-      orderTime: '2025-01-15T08:20:00',
-      deliveryAddress: '321 Cedar St, Kumasi',
-      specialInstructions: '',
-      estimatedDelivery: '2025-01-15T10:20:00'
-    },
-    {
-      id: 'ORD-005',
-      customerName: 'Grace Mensah',
-      customerPhone: '+233-50-987-6543',
-      mealName: 'Red Red with Fried Plantain',
-      quantity: 1,
-      totalAmount: 12.99,
-      status: 'cancelled',
-      orderTime: '2025-01-15T07:30:00',
-      deliveryAddress: '654 Birch Ln, Tamale',
-      specialInstructions: 'Customer cancelled - refund processed',
-      estimatedDelivery: '2025-01-15T09:30:00'
-    }
-  ];
-
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setOrders(mockOrders);
+  
+useEffect(() => {
+  const fetchOrders = async () => {
+    try {
+      const data = await apiGetChefOrders();
+      setOrders(data.orders); // assuming the API returns { orders: [...] }
+    } catch (error) {
+      console.error("Error fetching chef orders", error);
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+  fetchOrders();
+}, []);
+
+const updateOrderStatus = async (orderId, newStatus) => {
+  try {
+    const updatedOrder = await apiUpdateOrderStatus(orderId, newStatus);
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === orderId ? { ...order, status: updatedOrder.status } : order
+      )
+    );
+  } catch (error) {
+    console.error(`Error updating order ${orderId}:`, error);
+    alert("Failed to update order status. Please try again.");
+  }
+};
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -117,11 +70,6 @@ const ChefOrders = () => {
     }
   };
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
-  };
 
   const filteredOrders = orders.filter(order => {
     if (activeFilter === 'all') return true;

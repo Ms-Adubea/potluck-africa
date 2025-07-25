@@ -154,14 +154,17 @@ export const apiDeleteMeal = async (id) => {
   }
 };
 
-export const apiToggleMealAvailability = async (id, isAvailable) => {
+export const apiToggleMealAvailability = async (id, currentStatus) => {
+  const newStatus = currentStatus === "available" ? "unavailable" : "available";
+
   try {
-    const response = await apiClient.patch(`/meals/${id}/availability`, {
-      isAvailable
+    const response = await apiClient.patch(`/meals/${id}/status`, {
+      status: newStatus
     });
-    return response.data;
+    return response.data.meal; // Return updated meal object
   } catch (error) {
     console.error('Error toggling meal availability:', error);
     throw error;
   }
 };
+

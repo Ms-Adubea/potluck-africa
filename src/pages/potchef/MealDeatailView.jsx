@@ -14,6 +14,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { apiToggleMealAvailability } from "../../services/potchef";
 
 const MealDetailView = ({
   meal,
@@ -47,6 +48,22 @@ const MealDetailView = ({
     onDelete(meal.id);
     setShowDeleteConfirm(false);
   };
+
+  const handleToggleAvailability = async (mealId, currentStatus) => {
+  setUpdating(true);
+  try {
+    const updatedMeal = await apiToggleMealAvailability(mealId, currentStatus);
+    // Update local state with the new meal data
+    setMeals(prev =>
+      prev.map(meal => (meal.id === mealId ? updatedMeal : meal))
+    );
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setUpdating(false);
+  }
+};
+
 
   return (
     <div className="bg-white min-h-screen">
@@ -84,7 +101,7 @@ const MealDetailView = ({
         />
         <div className="absolute top-4 right-4">
           <button
-            onClick={() => onToggleAvailability(meal.id)}
+  onClick={() => onToggleAvailability(meal.id, meal.status)}
             className={`p-3 rounded-full ${
               meal.status === "available" ? "bg-green-500" : "bg-gray-500"
             } text-white shadow-lg`}

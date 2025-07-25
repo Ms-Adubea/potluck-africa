@@ -31,6 +31,8 @@ const MyMeals = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [updating, setUpdating] = useState(false);
 
+
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -153,39 +155,21 @@ const MyMeals = () => {
     }
   };
 
-  const handleToggleAvailability = async (mealId) => {
-    try {
-      const meal = meals.find((m) => m.id === mealId);
-      if (!meal) return;
+  const handleToggleAvailability = async (mealId, currentStatus) => {
+  setUpdating(true);
+  try {
+    const updatedMeal = await apiToggleMealAvailability(mealId, currentStatus);
+    // Update local state with the new meal data
+    setMeals(prev =>
+      prev.map(meal => (meal.id === mealId ? updatedMeal : meal))
+    );
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setUpdating(false);
+  }
+};
 
-      const newAvailability = !meal.isAvailable;
-
-      // Optimistically update UI
-      setMeals((prevMeals) =>
-        prevMeals.map((m) =>
-          m.id === mealId ? { ...m, isAvailable: newAvailability } : m
-        )
-      );
-
-      // Update selected meal if it's the same
-      if (selectedMeal && selectedMeal.id === mealId) {
-        setSelectedMeal((prev) => ({ ...prev, isAvailable: newAvailability }));
-      }
-
-      // Call API
-      await apiToggleMealAvailability(mealId, newAvailability);
-    } catch (err) {
-      console.error("Error toggling availability:", err);
-      setError("Failed to update meal availability. Please try again.");
-
-      // Revert optimistic update
-      setMeals((prevMeals) =>
-        prevMeals.map((m) =>
-          m.id === mealId ? { ...m, isAvailable: !m.isAvailable } : m
-        )
-      );
-    }
-  };
 
   const handleDeleteMeal = async (mealId) => {
     if (!window.confirm("Are you sure you want to delete this meal?")) {
@@ -380,16 +364,17 @@ const MyMeals = () => {
                         className="w-20 h-20 object-cover rounded-lg"
                       />
                       <button
-                        onClick={() => handleToggleAvailability(meal.id)}
+  onClick={() => handleToggleAvailability(meal.id, meal.status)}
+
                         className={`absolute -top-2 -right-2 p-1 rounded-full ${
-                          meal.status === "available" ||
-                          meal.status === "Pending"
+                          meal.status?.toLowerCase() === "available"
+
                             ? "bg-green-500"
                             : "bg-gray-500"
                         } text-white shadow-sm`}
                       >
                         {meal.status === "available" ||
-                        meal.status === "Pending" ? (
+                        meal.status === "unavailable" ? (
                           <Eye className="w-3 h-3" />
                         ) : (
                           <EyeOff className="w-3 h-3" />

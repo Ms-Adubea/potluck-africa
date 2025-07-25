@@ -20,6 +20,23 @@ export const apiGetAllMeals = async () => {
   }
 };
 
+
+// services/potlucky.js
+export const apiGetMealById = async (mealId) => {
+  try {
+    const response = await apiClient.get(`/meals/${mealId}`);
+    
+    if (response.data) {
+      return response.data; // Return the meal object
+    }
+    
+    return null; // Return null if no data
+  } catch (error) {
+    console.error(`Error fetching meal with ID ${mealId}:`, error);
+    throw error;
+  }
+};
+
 export const apiAddReview = async (userData) => {
   try {
     const response = await apiClient.post(`/meals/{mealId}/review`, userData);

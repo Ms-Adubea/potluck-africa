@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Star, Clock, DollarSign, Heart, ShoppingCart, ChefHat, X, SlidersHorizontal } from 'lucide-react';
 import { apiGetAllMeals } from '../../services/potlucky';
+import { useNavigate } from 'react-router-dom';
 
 const Browse = () => {
   const [meals, setMeals] = useState([]);
@@ -9,7 +10,12 @@ const Browse = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   
+const handleViewMeal = (mealId) => {
+    navigate(`/dashboard/potlucky/browse/${mealId}`); // This will change the URL
+  };
+
   // Filter states
   const [filters, setFilters] = useState({
     location: '',
@@ -319,27 +325,36 @@ const Browse = () => {
           </div>
         ) : (
           filteredMeals.map((meal) => (
-            <div key={meal.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="md:flex">
-                {/* Meal Image */}
-                <div className="md:w-48 md:flex-shrink-0">
-                  <img
-                    src={meal.image}
-                    alt={meal.name}
-                    className="w-full h-48 md:h-full object-cover"
-                    onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=No+Image';
-                    }}
-                  />
-                </div>
+           <div key={meal.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="md:flex">
+        {/* Make the image clickable */}
+        <div 
+          className="md:w-48 md:flex-shrink-0 cursor-pointer"
+          onClick={() => handleViewMeal(meal.id)}
+        >
+          <img
+            src={meal.image}
+            alt={meal.name}
+            className="w-full h-48 md:h-full object-cover"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=No+Image';
+            }}
+          />
+        </div>
+
 
                 {/* Meal Details */}
-                <div className="p-4 flex-1">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{meal.name}</h3>
-                      <p className="text-sm text-gray-600 mb-2">{meal.description}</p>
-                    </div>
+              <div className="p-4 flex-1">
+          <div className="flex justify-between items-start mb-2">
+            <div 
+              className="cursor-pointer"
+              onClick={() => handleViewMeal(meal.id)}
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-1 hover:text-orange-600">
+                {meal.name}
+              </h3>
+              <p className="text-sm text-gray-600 mb-2">{meal.description}</p>
+            </div>
                     <button
                       onClick={() => toggleFavorite(meal.id)}
                       className={`p-2 rounded-full transition-colors ${

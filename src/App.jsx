@@ -24,6 +24,7 @@ import AdminUserManagement from './pages/admin/AdminUserManagement';
 import MealDetailView from './pages/potchef/MealDeatailView';
 import PotluckyFavorites from './pages/potlucky/PotluckyFavorites';
 import AddUsers from './pages/admin/AddUsers';
+import PotluckyMealView from './pages/potlucky/PotluckyMealView';
 
 
 function App() {
@@ -132,6 +133,14 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="potlucky">
                   <Browse />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "browse/:mealId", 
+              element: (
+                <ProtectedRoute requiredRole="potlucky">
+                  <PotluckyMealView />
                 </ProtectedRoute>
               )
             },

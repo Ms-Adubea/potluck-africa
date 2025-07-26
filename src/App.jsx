@@ -25,6 +25,8 @@ import MealDetailView from './pages/potchef/MealDeatailView';
 import PotluckyFavorites from './pages/potlucky/PotluckyFavorites';
 import AddUsers from './pages/admin/AddUsers';
 import PotluckyMealView from './pages/potlucky/PotluckyMealView';
+import ProfilePage from './components/common/ProfilePage';
+import SettingsPage from './components/common/SettingsPage';
 
 
 function App() {
@@ -114,6 +116,22 @@ function App() {
                 </ProtectedRoute>
               )
             },
+            { 
+              path: "profile", 
+              element: (
+                <ProtectedRoute requiredRole="potchef">
+                  <ProfilePage />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "settings", 
+              element: (
+                <ProtectedRoute requiredRole="potchef">
+                  <SettingsPage />
+                </ProtectedRoute>
+              )
+            },
           ]
         },
         // Potlucky routes
@@ -160,6 +178,22 @@ function App() {
                 </ProtectedRoute>
               )
             },
+            { 
+              path: "profile", 
+              element: (
+                <ProtectedRoute requiredRole="potlucky">
+                  <ProfilePage />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "settings", 
+              element: (
+                <ProtectedRoute requiredRole="potlucky">
+                  <SettingsPage />
+                </ProtectedRoute>
+              )
+            },
           ]
         },
         // Franchisee routes
@@ -195,6 +229,22 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="franchisee">
                   <div>Chefs Component</div>
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "profile", 
+              element: (
+                <ProtectedRoute requiredRole="franchisee">
+                  <ProfilePage />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "settings", 
+              element: (
+                <ProtectedRoute requiredRole="franchisee">
+                  <SettingsPage />
                 </ProtectedRoute>
               )
             },
@@ -257,6 +307,22 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="admin">
                   <div>Content Component</div>
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "profile", 
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <ProfilePage />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "settings", 
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <SettingsPage />
                 </ProtectedRoute>
               )
             },

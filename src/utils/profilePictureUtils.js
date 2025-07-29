@@ -1,53 +1,7 @@
 // 📁 src/utils/profilePictureUtils.js
 
-/**
- * Utility functions for managing profile pictures in PWA
- */
-
-// Convert file to base64 string for localStorage storage
-export const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-  });
-};
-
-// Store profile picture in localStorage
-export const storeProfilePicture = async (file) => {
-  try {
-    if (!file) return null;
-    
-    const base64String = await fileToBase64(file);
-    localStorage.setItem('userProfilePicture', base64String);
-    return base64String;
-  } catch (error) {
-    console.error('Error storing profile picture:', error);
-    return null;
-  }
-};
-
-// Store profile picture URL (if coming from server)
-export const storeProfilePictureUrl = (url) => {
-  if (url) {
-    localStorage.setItem('userProfilePicUrl', url);
-  }
-};
-
-// Get stored profile picture
-export const getStoredProfilePicture = () => {
-  return localStorage.getItem('userProfilePicture') || localStorage.getItem('userProfilePicUrl');
-};
-
-// Remove stored profile picture
-export const removeStoredProfilePicture = () => {
-  localStorage.removeItem('userProfilePicture');
-  localStorage.removeItem('userProfilePicUrl');
-};
-
-// Compress image before storing (optional, for better performance)
-export const compressImage = (file, maxWidth = 200, quality = 0.8) => {
+// Compress image file before upload
+export const compressImage = (file, maxWidth = 400, quality = 0.8) => {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -56,11 +10,14 @@ export const compressImage = (file, maxWidth = 200, quality = 0.8) => {
     img.onload = () => {
       // Calculate new dimensions
       const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-      canvas.width = img.width * ratio;
-      canvas.height = img.height * ratio;
+      const width = img.width * ratio;
+      const height = img.height * ratio;
+      
+      canvas.width = width;
+      canvas.height = height;
       
       // Draw and compress
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(resolve, 'image/jpeg', quality);
     };
     
@@ -68,17 +25,61 @@ export const compressImage = (file, maxWidth = 200, quality = 0.8) => {
   });
 };
 
-// Store compressed profile picture
+// Store profile picture URL (from server response)
+export const storeProfilePictureUrl = (url) => {
+  localStorage.setItem('userProfilePicUrl', url);
+  localStorage.setItem('userProfilePicture', url);
+};
+
+// Store compressed profile picture locally
 export const storeCompressedProfilePicture = async (file) => {
   try {
-    if (!file) return null;
-    
     const compressedFile = await compressImage(file);
-    const base64String = await fileToBase64(compressedFile);
-    localStorage.setItem('userProfilePicture', base64String);
-    return base64String;
+    const reader = new FileReader();
+    
+    return new Promise((resolve, reject) => {
+      reader.onload = (e) => {
+        const base64String = e.target.result;
+        localStorage.setItem('userProfilePicture', base64String);
+        resolve(base64String);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(compressedFile);
+    });
   } catch (error) {
-    console.error('Error storing compressed profile picture:', error);
-    return null;
+    console.error('Error compressing image:', error);
+    throw error;
   }
+};
+
+// Get stored profile picture
+export const getStoredProfilePicture = () => {
+  return localStorage.getItem('userProfilePicture') || localStorage.getItem('userProfilePicUrl');
+};
+
+// Clear profile picture from storage
+export const clearProfilePicture = () => {
+  localStorage.removeItem('userProfilePicture');
+  localStorage.removeItem('userProfilePicUrl');
+};
+
+// Validate image file
+export const validateImageFile = (file) => {
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  
+  if (!validTypes.includes(file.type)) {
+    throw new Error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+  }
+  
+  if (file.size > maxSize) {
+    throw new Error('Image file size must be less than 5MB');
+  }
+  
+  return true;
+};
+
+// Create a preview URL for selected image
+export const createImagePreview = (file) => {
+  return URL.createObjectURL(file);
 };

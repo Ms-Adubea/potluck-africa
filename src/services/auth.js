@@ -181,9 +181,14 @@
 // };
 
 
-// 📁 src/services/auth.js
+// 📁 src/services/auth.js - Fixed for your backend
 import { apiClient } from "./config";
-import { storeProfilePictureUrl, storeCompressedProfilePicture } from '../utils/profilePictureUtils';
+import { 
+  storeProfilePictureUrl, 
+  storeCompressedProfilePicture, 
+  validateImageFile,
+  clearProfilePicture 
+} from '../utils/profilePictureUtils';
 
 export const apiRegister = async (userData) => {
   try {
@@ -194,44 +199,163 @@ export const apiRegister = async (userData) => {
     });
     return response.data;
   } catch (error) {
+    console.error('Registration error:', error);
     throw error;
   }
 };
 
-// Updated Login function with profile picture support
+// Login function matching your backend response
 export const apiLogin = async (credentials) => {
   try {
     const response = await apiClient.post('/users/signIn', credentials);
     const data = response.data;
     
-    // Store profile picture if available from server response
-    if (data.profilePicture || data.profilePictureUrl || data.avatar) {
-      const profilePicUrl = data.profilePicture || data.profilePictureUrl || data.avatar;
-      storeProfilePictureUrl(profilePicUrl);
+    // Store token (your backend returns 'accessToken')
+    if (data.accessToken) {
+      localStorage.setItem('token', data.accessToken);
     }
+    
+    // Store user data from login response
+    const userData = {
+      name: data.name,
+      role: data.role
+    };
+    
+    await storeBasicUserData(userData);
     
     return data;
   } catch (error) {
+    console.error('Login error:', error);
     throw error;
   }
 };
 
-// Helper function to store user data after successful login
+export const apiGetProfile = async () => {
+  try {
+    const response = await apiClient.get('/users/me');
+    
+    // Store the received profile data
+    await storeUserData(response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Get profile error:', error);
+    
+    // If API fails, try to return data from localStorage
+    const fallbackData = getUserDataFromStorage();
+    if (fallbackData.firstName && fallbackData.email) {
+      return fallbackData;
+    }
+    
+    throw error;
+  }
+};
+
+export const apiUpdateProfile = async (updateData) => {
+  try {
+    // Your backend expects specific field names: firstName, lastName, phone, password
+    const mappedData = {};
+    
+    // Map frontend field names to backend field names
+    if (updateData.name) {
+      // Split name into firstName and lastName if needed
+      const nameParts = updateData.name.split(' ');
+      mappedData.firstName = nameParts[0] || '';
+      mappedData.lastName = nameParts.slice(1).join(' ') || '';
+    }
+    
+    if (updateData.firstName) mappedData.firstName = updateData.firstName;
+    if (updateData.lastName) mappedData.lastName = updateData.lastName;
+    if (updateData.phone) mappedData.phone = updateData.phone;
+    if (updateData.password) mappedData.password = updateData.password;
+    
+    // Note: Your backend doesn't seem to handle address, bio, or role-specific fields
+    // You may need to add those to your backend validator and controller
+
+    const response = await apiClient.patch('/users/me', mappedData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    // Update local storage with new data
+    await storeUserData(response.data.user);
+    return response.data.user;
+  } catch (error) {
+    console.error('Update profile error:', error);
+    throw error;
+  }
+};
+
+export const apiUpdateProfilePicture = async (file) => {
+  try {
+    // Validate the image file
+    validateImageFile(file);
+    
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await apiClient.patch('/users/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    // Store the new profile picture URL
+    if (response.data.user && response.data.user.avatar) {
+      storeProfilePictureUrl(response.data.user.avatar);
+    }
+    
+    return response.data.user;
+  } catch (error) {
+    console.error('Update profile picture error:', error);
+    throw error;
+  }
+};
+
+export const apiChangePassword = async (currentPassword, newPassword) => {
+  try {
+    const response = await apiClient.patch('/users/me', {
+      password: newPassword
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Change password error:', error);
+    throw error;
+  }
+};
+
+// Helper function to store basic user data from login
+const storeBasicUserData = async (userData) => {
+  try {
+    if (userData.role) localStorage.setItem('userRole', userData.role);
+    if (userData.name) localStorage.setItem('userName', userData.name);
+    return true;
+  } catch (error) {
+    console.error('Error storing basic user data:', error);
+    return false;
+  }
+};
+
+// Helper function to store complete user data from profile
 export const storeUserData = async (userData, avatarFile = null) => {
   try {
-    // Store basic user data
-    localStorage.setItem('userRole', userData.role);
-    localStorage.setItem('userName', userData.name);
-    localStorage.setItem('userEmail', userData.email);
+    // Store user data matching your backend model
+    if (userData.role) localStorage.setItem('userRole', userData.role);
+    if (userData.firstName) localStorage.setItem('userFirstName', userData.firstName);
+    if (userData.lastName) localStorage.setItem('userLastName', userData.lastName);
+    if (userData.email) localStorage.setItem('userEmail', userData.email);
+    if (userData.phone) localStorage.setItem('userPhone', userData.phone);
+    if (userData.createdAt) localStorage.setItem('userJoinDate', userData.createdAt);
+    
+    // Combine first and last name for display
+    const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+    if (fullName) localStorage.setItem('userName', fullName);
     
     // Store profile picture if available
     if (avatarFile) {
-      // If we have the actual file (e.g., from registration)
       await storeCompressedProfilePicture(avatarFile);
-    } else if (userData.profilePicture || userData.profilePictureUrl || userData.avatar) {
-      // If we have a URL from server response
-      const profilePicUrl = userData.profilePicture || userData.profilePictureUrl || userData.avatar;
-      storeProfilePictureUrl(profilePicUrl);
+    } else if (userData.avatar) {
+      storeProfilePictureUrl(userData.avatar);
     }
     
     return true;
@@ -241,29 +365,53 @@ export const storeUserData = async (userData, avatarFile = null) => {
   }
 };
 
-// Helper function to clear user data on logout
-export const clearUserData = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('userRole');
-  localStorage.removeItem('userName');
-  localStorage.removeItem('userEmail');
-  localStorage.removeItem('userProfilePicture');
-  localStorage.removeItem('userProfilePicUrl');
+// Get user data from localStorage (fallback)
+const getUserDataFromStorage = () => {
+  const firstName = localStorage.getItem('userFirstName') || '';
+  const lastName = localStorage.getItem('userLastName') || '';
+  const fullName = localStorage.getItem('userName') || `${firstName} ${lastName}`.trim();
+  
+  return {
+    firstName,
+    lastName,
+    name: fullName,
+    email: localStorage.getItem('userEmail') || '',
+    phone: localStorage.getItem('userPhone') || '',
+    role: localStorage.getItem('userRole'),
+    createdAt: localStorage.getItem('userJoinDate') || new Date().toISOString(),
+    avatar: localStorage.getItem('userProfilePicture') || localStorage.getItem('userProfilePicUrl'),
+  };
 };
 
-export const apiGetProfile = async (payload) => {
-    return await apiClient.get ( '/users/me')
-}
+// Helper function to clear user data on logout
+export const clearUserData = () => {
+  // Clear authentication data
+  localStorage.removeItem('token');
+  localStorage.removeItem('userRole');
+  
+  // Clear user data
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userFirstName');
+  localStorage.removeItem('userLastName');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userPhone');
+  localStorage.removeItem('userJoinDate');
+  
+  // Clear profile picture
+  clearProfilePicture();
+};
 
-export const apiUpdateProfile = async (updateData) => {
-    try {
-        const response = await apiClient.patch('/users/me', updateData, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        return response;
-    } catch (error) {
-        throw error;
-    }
+// Check if user is authenticated
+export const isAuthenticated = () => {
+  const token = localStorage.getItem('token');
+  const userData = getUserDataFromStorage();
+  return !!(token && (userData.email || userData.name));
+};
+
+// Get current user data
+export const getCurrentUser = () => {
+  if (isAuthenticated()) {
+    return getUserDataFromStorage();
+  }
+  return null;
 };

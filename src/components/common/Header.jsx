@@ -187,7 +187,7 @@
 // export default Header;
 
 
-// 📁 src/components/common/Header.jsx - Enhanced with beautiful profile dropdown
+// 📁 src/components/common/Header.jsx - Enhanced with better profile picture handling
 
 import React, { useState, useEffect } from "react";
 import { Bell, User, Settings, LogOut, ChevronDown } from "lucide-react";
@@ -200,6 +200,7 @@ import { clearUserData } from "../../services/auth";
 const Header = ({ currentRole }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
+  const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
   const config = navigationConfig[currentRole];
 
@@ -210,6 +211,9 @@ const Header = ({ currentRole }) => {
   // Load profile picture on component mount
   useEffect(() => {
     const loadProfilePicture = () => {
+      // Reset image error state
+      setImageError(false);
+      
       // Try to get profile picture from localStorage first
       const storedProfilePic = localStorage.getItem("userProfilePicture");
       if (storedProfilePic) {
@@ -224,6 +228,16 @@ const Header = ({ currentRole }) => {
     };
 
     loadProfilePicture();
+
+    // Listen for storage changes to update profile picture across tabs
+    const handleStorageChange = (e) => {
+      if (e.key === 'userProfilePicture' || e.key === 'userProfilePicUrl') {
+        loadProfilePicture();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Get first name from full name
@@ -259,6 +273,13 @@ const Header = ({ currentRole }) => {
     navigate("/login", { replace: true });
   };
 
+  // Handle image error more gracefully
+  const handleImageError = () => {
+    console.warn('Profile image failed to load, falling back to initial');
+    setImageError(true);
+    // Don't remove from localStorage immediately - just show fallback
+  };
+
   // Profile Avatar Component
   const ProfileAvatar = ({ size = "small" }) => {
     const sizeClasses = {
@@ -273,18 +294,15 @@ const Header = ({ currentRole }) => {
       large: "text-xl"
     };
 
-    if (profilePicture) {
+    // Show image only if we have a profilePicture and no error
+    if (profilePicture && !imageError) {
       return (
         <img
           src={profilePicture}
           alt="Profile"
           className={`${sizeClasses[size]} rounded-full object-cover ring-2 ring-white shadow-sm`}
-          onError={() => {
-            // If image fails to load, remove it from state and localStorage
-            setProfilePicture(null);
-            localStorage.removeItem("userProfilePicture");
-            localStorage.removeItem("userProfilePicUrl");
-          }}
+          onError={handleImageError}
+          onLoad={() => setImageError(false)} // Reset error state on successful load
         />
       );
     }

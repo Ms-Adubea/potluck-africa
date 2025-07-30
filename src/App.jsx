@@ -43,10 +43,6 @@ function App() {
       path: "/login",
       element: <Login />,
     },
-    {
-      path: "/favorites",
-      element: <PotluckyFavorites />,
-    },
 
     {
       path: "/potchef-onboarding",
@@ -174,7 +170,7 @@ function App() {
               path: "favorites", 
               element: (
                 <ProtectedRoute requiredRole="potlucky">
-                  <div>Favorites Component</div>
+                  <PotluckyFavorites />
                 </ProtectedRoute>
               )
             },

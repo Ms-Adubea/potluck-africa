@@ -279,7 +279,7 @@ const Header = ({ currentRole }) => {
                   </div>
                 </button>
 
-                <button
+                {/* <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     navigate(`/dashboard/${currentRole}/settings`);
@@ -293,7 +293,7 @@ const Header = ({ currentRole }) => {
                     <p className="font-medium text-gray-900">Settings</p>
                     <p className="text-xs text-gray-500">Preferences & privacy</p>
                   </div>
-                </button>
+                </button> */}
 
                 <div className="border-t border-gray-100 my-2"></div>
 

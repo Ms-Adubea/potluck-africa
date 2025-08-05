@@ -1,4 +1,4 @@
-// 📁 src/components/common/ProfilePage.jsx - Enhanced UI for food web app PWA with Password Change
+// 📁 src/components/common/ProfilePage.jsx - Enhanced UI for food web app PWA with Password Change and Header Sync
 import React, { useState, useEffect } from 'react';
 import { Camera, Edit2, Save, X, MapPin, Phone, Mail, Calendar, Shield, Loader, User, ChefHat, Heart, Crown, Settings, Lock, Eye, EyeOff, Key } from 'lucide-react';
 import { apiGetProfile, apiUpdateProfile, apiUpdateProfilePicture, apiChangePassword } from '../../services/auth';
@@ -93,7 +93,7 @@ const ProfilePage = ({ currentRole }) => {
     }
   };
 
-  // Handle profile picture upload
+  // Handle profile picture upload (UPDATED)
   const handleProfilePictureChange = async (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -107,6 +107,15 @@ const ProfilePage = ({ currentRole }) => {
         // Update local state
         if (response.avatar) {
           setProfilePicture(response.avatar);
+          
+          // SYNC TO LOCALSTORAGE FOR HEADER CONSISTENCY
+          localStorage.setItem('userProfilePicture', response.avatar);
+          
+          // DISPATCH CUSTOM EVENT TO UPDATE HEADER
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: { avatar: response.avatar }
+          }));
+          
           setSuccess('Profile picture updated successfully!');
         }
         
@@ -123,6 +132,11 @@ const ProfilePage = ({ currentRole }) => {
           const imageUrl = e.target.result;
           setProfilePicture(imageUrl);
           localStorage.setItem('userProfilePicture', imageUrl);
+          
+          // DISPATCH EVENT FOR HEADER UPDATE
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: { avatar: imageUrl }
+          }));
         };
         reader.readAsDataURL(file);
       } finally {
@@ -221,7 +235,7 @@ const ProfilePage = ({ currentRole }) => {
     }
   };
 
-  // Save profile changes
+  // Save profile changes (UPDATED)
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -247,6 +261,22 @@ const ProfilePage = ({ currentRole }) => {
       };
       
       setProfileData(updatedData);
+      
+      // SYNC TO LOCALSTORAGE FOR HEADER CONSISTENCY
+      localStorage.setItem('userFirstName', response.firstName || '');
+      localStorage.setItem('userLastName', response.lastName || '');
+      localStorage.setItem('userName', updatedData.name);
+      localStorage.setItem('userPhone', response.phone || '');
+      
+      // DISPATCH CUSTOM EVENT TO UPDATE HEADER
+      window.dispatchEvent(new CustomEvent('profileUpdated', {
+        detail: { 
+          name: updatedData.name,
+          firstName: response.firstName,
+          lastName: response.lastName
+        }
+      }));
+      
       setIsEditing(false);
       setSuccess('Profile updated successfully!');
       
@@ -264,12 +294,21 @@ const ProfilePage = ({ currentRole }) => {
     }
   };
 
-  // Fallback save to localStorage
+  // Fallback save to localStorage (UPDATED)
   const saveToLocalStorage = () => {
     localStorage.setItem('userFirstName', profileData.firstName);
     localStorage.setItem('userLastName', profileData.lastName);
     localStorage.setItem('userName', profileData.name);
     localStorage.setItem('userPhone', profileData.phone);
+
+    // DISPATCH EVENT FOR HEADER UPDATE
+    window.dispatchEvent(new CustomEvent('profileUpdated', {
+      detail: { 
+        name: profileData.name,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName
+      }
+    }));
 
     setIsEditing(false);
     setSuccess('Profile updated locally!');

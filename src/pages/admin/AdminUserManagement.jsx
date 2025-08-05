@@ -5,7 +5,8 @@ import {
   CheckCircle, XCircle, Mail, 
   Phone, User, Shield, RefreshCw,
   ChevronRight, Search, Plus,
-  Calendar, MapPin, Activity
+  Calendar, MapPin, Activity,
+  Menu, X
 } from 'lucide-react';
 // import { apiGetAllUsers, apiDeleteUser, apiGetUser } from './api';
 import UserDetailView from './UserDetailView';
@@ -21,6 +22,7 @@ const AdminUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({});
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -148,7 +150,7 @@ const AdminUserManagement = () => {
 
   if (loading && !selectedUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
           <p className="text-slate-600">Loading users...</p>
@@ -172,93 +174,139 @@ const AdminUserManagement = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          {/* Title and Mobile Menu */}
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="w-6 h-6 text-blue-600" />
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
-                <p className="text-slate-600">Manage and monitor all platform users</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">User Management</h1>
+                <p className="text-sm sm:text-base text-slate-600 hidden sm:block">Manage and monitor all platform users</p>
               </div>
             </div>
             
-            <Link to="/dashboard/admin/add-user">
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" />
-              Add User
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="sm:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+            >
+              {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            </Link>
+
+            {/* Desktop Action Buttons */}
+            <div className="hidden sm:flex items-center gap-3">
+              <Link to="/dashboard/admin/add-franchisee">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm">
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden md:inline">Add Franchisee</span>
+                  <span className="md:hidden">Franchisee</span>
+                </button>
+              </Link>
+              <Link to="/dashboard/admin/add-user">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm">
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden md:inline">Add User</span>
+                  <span className="md:hidden">User</span>
+                </button>
+              </Link>
+            </div>
           </div>
+
+          {/* Mobile Menu */}
+          {showMobileMenu && (
+            <div className="sm:hidden mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="space-y-3">
+                <Link to="/dashboard/admin/add-franchisee" className="block">
+                  <button 
+                    className="w-full flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Franchisee
+                  </button>
+                </Link>
+                <Link to="/dashboard/admin/add-user" className="block">
+                  <button 
+                    className="w-full flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add User
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Stats Cards */}
           {stats.roleCounts && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
               {Object.entries(stats.roleCounts).map(([role, count]) => (
-                <div key={role} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <div key={role} className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">{getRoleIcon(role)}</span>
-                    <span className="text-sm font-medium text-slate-600 capitalize">{role}s</span>
+                    <span className="text-base sm:text-lg">{getRoleIcon(role)}</span>
+                    <span className="text-xs sm:text-sm font-medium text-slate-600 capitalize truncate">{role}s</span>
                   </div>
-                  <p className="text-2xl font-bold text-slate-900">{count}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900">{count}</p>
                 </div>
               ))}
             </div>
           )}
           
           {/* Search and Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search users by name, email, or role..."
+                placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm sm:text-base"
               />
             </div>
 
             <button
               onClick={fetchUsers}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50 whitespace-nowrap"
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
                 <RefreshCw className="w-4 h-4" />
               )}
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
         )}
 
         {/* Users Grid */}
-        <div className="grid gap-4">
+        <div className="grid gap-3 sm:gap-4">
           {filteredUsers.map((user) => (
             <div key={user.id || user._id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="p-6">
-                <div className="flex items-center gap-4">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                   {/* Profile Picture */}
-                  <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                     {user.avatar ? (
                       <img src={user.avatar} alt={`${user.firstName} ${user.lastName}`} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-lg font-bold text-white">
+                      <span className="text-sm sm:text-lg font-bold text-white">
                         {getInitials(user.firstName, user.lastName)}
                       </span>
                     )}
@@ -266,30 +314,30 @@ const AdminUserManagement = () => {
                   
                   {/* User Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-slate-900 text-lg truncate">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                      <h3 className="font-semibold text-slate-900 text-base sm:text-lg truncate">
                         {user.firstName || 'N/A'} {user.lastName || ''}
                       </h3>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getRoleColor(user.role)}`}>
+                      <span className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium border self-start ${getRoleColor(user.role)}`}>
                         <span className="mr-1">{getRoleIcon(user.role)}</span>
                         {user.role || 'N/A'}
                       </span>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
+                    <div className="space-y-1 sm:space-y-0 sm:flex sm:items-center sm:gap-4 text-xs sm:text-sm text-slate-500 mb-3">
                       <div className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
+                        <Mail className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">{user.email || 'N/A'}</span>
                       </div>
                       {user.phone && (
                         <div className="flex items-center gap-1">
-                          <Phone className="w-3 h-3" />
+                          <Phone className="w-3 h-3 flex-shrink-0" />
                           <span>{user.phone}</span>
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-4 text-xs">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs">
                       <div className={`flex items-center gap-1 ${getStatusColor(user.isApproved)}`}>
                         {getStatusIcon(user.isApproved)}
                         <span className="font-medium">{user.isApproved ? 'Approved' : 'Pending'}</span>
@@ -300,19 +348,20 @@ const AdminUserManagement = () => {
                       </div>
                       <div className="flex items-center gap-1 text-slate-500">
                         <Calendar className="w-3 h-3" />
-                        <span>Joined {formatDate(user.createdAt)}</span>
+                        <span className="hidden sm:inline">Joined </span>
+                        <span className="truncate">{formatDate(user.createdAt)}</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
                     <button
                       onClick={() => fetchUserDetails(user.id || user._id)}
                       className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="View Details"
                     >
-                      <Eye className="w-5 h-5" />
+                      <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                     
                     <button
@@ -322,9 +371,9 @@ const AdminUserManagement = () => {
                       title="Delete User"
                     >
                       {deleteLoading === (user.id || user._id) ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-red-600"></div>
                       ) : (
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
                     </button>
                   </div>
@@ -336,14 +385,14 @@ const AdminUserManagement = () => {
 
         {/* Empty State */}
         {filteredUsers.length === 0 && !loading && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 px-4">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Users className="w-8 h-8 text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
               {searchTerm ? 'No users found' : 'No users yet'}
             </h3>
-            <p className="text-slate-500 mb-6">
+            <p className="text-slate-500 mb-6 text-sm sm:text-base max-w-md mx-auto">
               {searchTerm 
                 ? 'Try adjusting your search terms or clear the search to see all users.' 
                 : 'When users join your platform, they will appear here.'}
@@ -361,22 +410,22 @@ const AdminUserManagement = () => {
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl mx-4">
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                 <AlertCircle className="w-6 h-6 text-red-600" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-lg font-semibold text-slate-900">Delete User</h3>
                 <p className="text-sm text-slate-600">This action cannot be undone</p>
               </div>
             </div>
             
-            <p className="text-slate-700 mb-6">
+            <p className="text-slate-700 mb-6 text-sm sm:text-base">
               Are you sure you want to delete this user? All associated data will be permanently removed.
             </p>
             
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 px-4 py-2.5 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"

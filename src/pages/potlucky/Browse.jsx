@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Star, Clock, DollarSign, Heart, ShoppingCart, ChefHat, X, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter, MapPin, Star, Clock, DollarSign, Heart, ShoppingCart, ChefHat, X, SlidersHorizontal, Plus, Check } from 'lucide-react';
 import { apiGetAllMeals } from '../../services/potlucky';
+// import { useFavorites } from '../../contexts/FavoritesContext';
+// import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
+import { useFavorites } from '../../contexts/FavoritesContext';
+import { useCart } from '../../contexts/CartContext';
 
 const Browse = () => {
   const [meals, setMeals] = useState([]);
   const [filteredMeals, setFilteredMeals] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [favorites, setFavorites] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [addingToCart, setAddingToCart] = useState(new Set());
+  const [showSuccessMessage, setShowSuccessMessage] = useState(null);
   
-const handleViewMeal = (mealId) => {
-    navigate(`/dashboard/potlucky/browse/${mealId}`); // This will change the URL
+  const navigate = useNavigate();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { addToCart, getItemCount } = useCart();
+
+  const handleViewMeal = (mealId) => {
+    navigate(`/dashboard/potlucky/browse/${mealId}`);
   };
 
   // Filter states
@@ -47,19 +55,21 @@ const handleViewMeal = (mealId) => {
       location: apiMeal.pickupLocation,
       rating: apiMeal.averageRating || 0,
       reviewCount: apiMeal.reviewCount || 0,
-      available: apiMeal.status === 'Available' || apiMeal.status === 'Pending', // Adjust based on your business logic
+      available: apiMeal.status === 'Available',
       deliveryTime: `${apiMeal.cookingTime} mins`,
-      image: apiMeal.photos && apiMeal.photos.length > 0 ? apiMeal.photos[0] : '/api/placeholder/300/200', // Default placeholder
+      image: apiMeal.photos && apiMeal.photos.length > 0 ? apiMeal.photos[0] : '/api/placeholder/300/200',
       chef: {
         name: `${apiMeal.createdBy.firstName} ${apiMeal.createdBy.lastName}`,
-        rating: 4.5 // Default chef rating since not provided
+        rating: 4.5
       },
       tags: [
         apiMeal.category,
         apiMeal.spiceLevel,
         ...apiMeal.dietaryRestrictions,
         `${apiMeal.servings} serving${apiMeal.servings > 1 ? 's' : ''}`
-      ].filter(Boolean)
+      ].filter(Boolean),
+      // Include full meal data for cart
+      fullMealData: apiMeal
     };
   };
 
@@ -67,9 +77,6 @@ const handleViewMeal = (mealId) => {
     const fetchMeals = async () => {
       try {
         const response = await apiGetAllMeals();
-        console.log('API Response:', response); // Debug log
-        
-        // Transform the data to match component expectations
         const transformedMeals = response.map(transformMealData);
         setMeals(transformedMeals);
         setFilteredMeals(transformedMeals);
@@ -126,16 +133,34 @@ const handleViewMeal = (mealId) => {
     setFilteredMeals(filtered);
   };
 
-  const toggleFavorite = (mealId) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(mealId)) {
-        newFavorites.delete(mealId);
-      } else {
-        newFavorites.add(mealId);
+  const handleToggleFavorite = async (mealId, event) => {
+    event.stopPropagation(); // Prevent navigation when clicking heart
+    await toggleFavorite(mealId);
+  };
+
+  const handleAddToCart = async (meal, event) => {
+    event.stopPropagation(); // Prevent navigation when clicking add to cart
+    
+    if (!meal.available) return;
+    
+    setAddingToCart(prev => new Set(prev).add(meal.id));
+    
+    try {
+      const result = await addToCart(meal.fullMealData, 1);
+      
+      if (result.success) {
+        setShowSuccessMessage(meal.id);
+        setTimeout(() => setShowSuccessMessage(null), 2000);
       }
-      return newFavorites;
-    });
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    } finally {
+      setAddingToCart(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(meal.id);
+        return newSet;
+      });
+    }
   };
 
   const clearFilters = () => {
@@ -158,6 +183,13 @@ const handleViewMeal = (mealId) => {
     }));
   };
 
+  const showSuccessToast = (message) => {
+    // You can implement a proper toast notification here
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Potlucky', { body: message, icon: '/icon-192x192.png' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -168,11 +200,26 @@ const handleViewMeal = (mealId) => {
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
-      {/* Header */}
+      {/* Header with Cart Count */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Browse Meals</h1>
-        <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-          {filteredMeals.length} meals
+        <div className="flex items-center space-x-3">
+          <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+            {filteredMeals.length} meals
+          </div>
+          <div className="relative">
+            <button 
+              onClick={() => navigate('/cart')}
+              className="p-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5" />
+            </button>
+            {getItemCount() > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {getItemCount()}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -198,7 +245,6 @@ const handleViewMeal = (mealId) => {
           <span>Filters</span>
         </button>
         
-        {/* Quick cuisine filters */}
         {cuisineTypes.slice(0, 4).map((cuisine) => (
           <button
             key={cuisine}
@@ -325,45 +371,44 @@ const handleViewMeal = (mealId) => {
           </div>
         ) : (
           filteredMeals.map((meal) => (
-           <div key={meal.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="md:flex">
-        {/* Make the image clickable */}
-        <div 
-          className="md:w-48 md:flex-shrink-0 cursor-pointer"
-          onClick={() => handleViewMeal(meal.id)}
-        >
-          <img
-            src={meal.image}
-            alt={meal.name}
-            className="w-full h-48 md:h-full object-cover"
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=No+Image';
-            }}
-          />
-        </div>
-
+            <div key={meal.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="md:flex">
+                {/* Make the image clickable */}
+                <div 
+                  className="md:w-48 md:flex-shrink-0 cursor-pointer"
+                  onClick={() => handleViewMeal(meal.id)}
+                >
+                  <img
+                    src={meal.image}
+                    alt={meal.name}
+                    className="w-full h-48 md:h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=No+Image';
+                    }}
+                  />
+                </div>
 
                 {/* Meal Details */}
-              <div className="p-4 flex-1">
-          <div className="flex justify-between items-start mb-2">
-            <div 
-              className="cursor-pointer"
-              onClick={() => handleViewMeal(meal.id)}
-            >
-              <h3 className="text-lg font-semibold text-gray-900 mb-1 hover:text-orange-600">
-                {meal.name}
-              </h3>
-              <p className="text-sm text-gray-600 mb-2">{meal.description}</p>
-            </div>
+                <div className="p-4 flex-1">
+                  <div className="flex justify-between items-start mb-2">
+                    <div 
+                      className="cursor-pointer flex-1"
+                      onClick={() => handleViewMeal(meal.id)}
+                    >
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1 hover:text-orange-600">
+                        {meal.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">{meal.description}</p>
+                    </div>
                     <button
-                      onClick={() => toggleFavorite(meal.id)}
+                      onClick={(e) => handleToggleFavorite(meal.id, e)}
                       className={`p-2 rounded-full transition-colors ${
-                        favorites.has(meal.id)
+                        isFavorite(meal.id)
                           ? 'bg-red-100 text-red-600'
                           : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                       }`}
                     >
-                      <Heart className={`w-5 h-5 ${favorites.has(meal.id) ? 'fill-current' : ''}`} />
+                      <Heart className={`w-5 h-5 ${isFavorite(meal.id) ? 'fill-current' : ''}`} />
                     </button>
                   </div>
 
@@ -415,15 +460,30 @@ const handleViewMeal = (mealId) => {
                       <span className="text-2xl font-bold text-green-600">{meal.price}</span>
                     </div>
                     <button
-                      disabled={!meal.available}
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      onClick={(e) => handleAddToCart(meal, e)}
+                      disabled={!meal.available || addingToCart.has(meal.id)}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors relative ${
                         meal.available
                           ? 'bg-orange-600 text-white hover:bg-orange-700'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                     >
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>{meal.available ? 'Add to Cart' : 'Unavailable'}</span>
+                      {addingToCart.has(meal.id) ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Adding...</span>
+                        </>
+                      ) : showSuccessMessage === meal.id ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Added!</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-4 h-4" />
+                          <span>{meal.available ? 'Add to Cart' : 'Unavailable'}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

@@ -1,5 +1,7 @@
 import { apiClient } from "./config";
 
+// ===== USER MANAGEMENT =====
+
 // GET all users
 export const apiGetAllUsers = async () => {
   const response = await apiClient.get('/admin/users');
@@ -18,7 +20,6 @@ export const apiDeleteUser = async (userId) => {
   return response.data;
 };
 
-
 // GET pending user
 export const apiGetAllPendingUsers = async () => {
   const res = await apiClient.get('/admin/pending-users');
@@ -35,4 +36,50 @@ export const apiApproveUser = async (id, data) => {
 export const apiGetOnePendingUser = async (id) => {
   const res = await apiClient.get(`/admin/pending-users/${id}`);
   return res.data;
+};
+
+// ===== FRANCHISEE MANAGEMENT =====
+
+// GET all franchisees
+export const apiGetAllFranchisees = async () => {
+  const response = await apiClient.get('/franchisees');
+  return response.data;
+};
+
+// POST add new franchisee
+export const apiAddFranchisee = async (formData) => {
+  const response = await apiClient.post('/franchisees', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// GET one franchisee
+export const apiGetFranchiseeById = async (franchiseeId) => {
+  const response = await apiClient.get(`/franchisees/${franchiseeId}`);
+  return response.data;
+};
+
+// PATCH update franchisee text data
+export const apiUpdateFranchiseeText = async (franchiseeId, data) => {
+  const response = await apiClient.patch(`/franchisees/${franchiseeId}/text`, data);
+  return response.data;
+};
+
+// PATCH update franchisee images
+export const apiUpdateFranchiseeImages = async (franchiseeId, formData) => {
+  const response = await apiClient.patch(`/franchisees/${franchiseeId}/images`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// DELETE franchisee
+export const apiDeleteFranchisee = async (franchiseeId) => {
+  const response = await apiClient.delete(`/franchisees/${franchiseeId}`);
+  return response.data;
 };

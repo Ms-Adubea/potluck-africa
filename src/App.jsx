@@ -23,17 +23,32 @@ import ProtectedRoute from './components/ProtectedRoutes';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
 import MealDetailView from './pages/potchef/MealDeatailView';
 import PotluckyFavorites from './pages/potlucky/PotluckyFavorites';
-import AddUsers from './pages/admin/AddUsers';
 import PotluckyMealView from './pages/potlucky/PotluckyMealView';
 import ProfilePage from './components/common/ProfilePage';
 import SettingsPage from './components/common/SettingsPage';
+import { FavoritesProvider } from './contexts/FavoritesContext';
+import { CartProvider } from './contexts/CartContext';
+import OrderCheckout from './pages/potlucky/OrderCheckout';
+import { useEffect } from 'react';
+import { registerServiceWorker, requestNotificationPermission } from './utils/pwaUtils';
+import AddFranchisee from './pages/admin/AddFranchisee';
+import AddUsers from './pages/admin/AddUsers';
 
 
 function App() {
+useEffect(() => {
+  registerServiceWorker();
+  requestNotificationPermission();
+}, []);
+
   const router = createBrowserRouter([
     {
       path: "/",
       element: <HomePage />,
+    },
+    {
+      path: "/cart",
+      element: <OrderCheckout />,
     },
     {
       path: "/signup",
@@ -146,7 +161,11 @@ function App() {
               path: "browse", 
               element: (
                 <ProtectedRoute requiredRole="potlucky">
+                   <FavoritesProvider>
+                    <CartProvider>
                   <Browse />
+                  </CartProvider>
+                  </FavoritesProvider>
                 </ProtectedRoute>
               )
             },
@@ -279,6 +298,14 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="admin">
                   <AdminUserManagement />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "add-franchisee", 
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <AddFranchisee />
                 </ProtectedRoute>
               )
             },

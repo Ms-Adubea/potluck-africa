@@ -1,82 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Heart, Star, MapPin, Clock, DollarSign, 
   ChefHat, AlertCircle, RefreshCw, Search,
-  Filter, X, ShoppingCart, Trash2
+  Filter, X, ShoppingCart
 } from 'lucide-react';
+import { apiGetFavoriteMeals } from '../../services/potlucky'; // Use real import
 
-// Mock API functions - replace with your actual API calls
-const apiGetFavoriteMeals = async () => {
-  // Simulate API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        {
-          id: '1',
-          name: 'Jollof Rice with Grilled Chicken',
-          chef: 'Chef Ama',
-          chefId: 'chef1',
-          price: 25.00,
-          rating: 4.8,
-          reviewCount: 124,
-          location: 'East Legon, Accra',
-          prepTime: 30,
-          image: '/api/placeholder/300/200',
-          description: 'Authentic Ghanaian jollof rice with perfectly grilled chicken, served with salad and plantain.',
-          isAvailable: true,
-          addedToFavorites: '2025-07-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          name: 'Banku with Tilapia',
-          chef: 'Chef Kojo',
-          chefId: 'chef2',
-          price: 20.00,
-          rating: 4.5,
-          reviewCount: 89,
-          location: 'Tema, Accra',
-          prepTime: 45,
-          image: '/api/placeholder/300/200',
-          description: 'Fresh tilapia with traditional banku and spicy pepper sauce.',
-          isAvailable: false,
-          addedToFavorites: '2025-07-10T15:22:00Z'
-        },
-        {
-          id: '3',
-          name: 'Kelewele with Groundnut Sauce',
-          chef: 'Chef Akosua',
-          chefId: 'chef3',
-          price: 15.00,
-          rating: 4.9,
-          reviewCount: 156,
-          location: 'Osu, Accra',
-          prepTime: 20,
-          image: '/api/placeholder/300/200',
-          description: 'Spiced fried plantain with creamy groundnut sauce and boiled eggs.',
-          isAvailable: true,
-          addedToFavorites: '2025-07-12T08:45:00Z'
-        }
-      ]);
-    }, 1000);
-  });
-};
-
+// Keep or replace these with real API implementations
 const apiRemoveFromFavorites = async (mealId) => {
-  // Simulate API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true });
-    }, 500);
-  });
+  try {
+    const res = await apiClient.delete(`/meals/${mealId}/favorites`);
+    return res.data;
+  } catch (error) {
+    console.error('Failed to remove favorite:', error);
+    throw error;
+  }
 };
 
 const apiAddToCart = async (mealId, quantity = 1) => {
-  // Simulate API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, message: 'Added to cart successfully!' });
-    }, 500);
-  });
+  try {
+    const res = await apiClient.post('/cart', { mealId, quantity });
+    return res.data;
+  } catch (error) {
+    console.error('Failed to add to cart:', error);
+    throw error;
+  }
 };
 
 const PotluckyFavorites = () => {
@@ -85,7 +33,7 @@ const PotluckyFavorites = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAvailable, setFilterAvailable] = useState(false);
-  const [sortBy, setSortBy] = useState('recent'); // recent, rating, price-low, price-high
+  const [sortBy, setSortBy] = useState('recent');
   const [showFilters, setShowFilters] = useState(false);
   const [removingId, setRemovingId] = useState(null);
   const [addingToCartId, setAddingToCartId] = useState(null);
@@ -98,7 +46,7 @@ const PotluckyFavorites = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiFetchFavorites();
+      const data = await apiGetFavoriteMeals();
       setFavorites(data);
     } catch (err) {
       console.error('Error fetching favorites:', err);
@@ -112,7 +60,7 @@ const PotluckyFavorites = () => {
     try {
       setRemovingId(mealId);
       await apiRemoveFromFavorites(mealId);
-      setFavorites(favorites.filter(meal => meal.id !== mealId));
+      setFavorites((prev) => prev.filter((meal) => meal.id !== mealId));
     } catch (err) {
       console.error('Error removing from favorites:', err);
       setError('Failed to remove from favorites. Please try again.');
@@ -123,11 +71,10 @@ const PotluckyFavorites = () => {
 
   const handleAddToCart = async (meal) => {
     if (!meal.isAvailable) return;
-    
+
     try {
       setAddingToCartId(meal.id);
       await apiAddToCart(meal.id);
-      // You could show a success toast here
     } catch (err) {
       console.error('Error adding to cart:', err);
       setError('Failed to add to cart. Please try again.');
@@ -140,21 +87,26 @@ const PotluckyFavorites = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
-  // Filter and sort favorites
-  const filteredAndSortedFavorites = favorites
-    .filter(meal => {
-      const matchesSearch = meal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           meal.chef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           meal.location.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesAvailability = !filterAvailable || meal.isAvailable;
-      
-      return matchesSearch && matchesAvailability;
-    })
+ const filteredAndSortedFavorites = favorites
+  .filter((meal) => {
+    const name = meal?.name || '';
+    const chef = meal?.chef || '';
+    const location = meal?.location || '';
+
+    const matchesSearch =
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      chef.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      location.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesAvailability = !filterAvailable || meal.isAvailable;
+
+    return matchesSearch && matchesAvailability;
+  })
+
     .sort((a, b) => {
       switch (sortBy) {
         case 'rating':

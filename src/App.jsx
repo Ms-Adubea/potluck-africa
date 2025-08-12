@@ -33,6 +33,7 @@ import { useEffect } from 'react';
 import { registerServiceWorker, requestNotificationPermission } from './utils/pwaUtils';
 import AddFranchisee from './pages/admin/AddFranchisee';
 import AddUsers from './pages/admin/AddUsers';
+import FranchiseeManagement from './pages/admin/FranchiseeManagement';
 
 
 function App() {
@@ -318,10 +319,10 @@ useEffect(() => {
               )
             },
             { 
-              path: "analytics", 
+              path: "places", 
               element: (
                 <ProtectedRoute requiredRole="admin">
-                  <div>Analytics Component</div>
+                  <FranchiseeManagement />
                 </ProtectedRoute>
               )
             },

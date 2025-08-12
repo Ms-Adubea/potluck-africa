@@ -40,7 +40,7 @@ const navigationConfig = {
     navigation: [
       { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
       { id: 'users', label: 'Users', icon: 'Users' },
-      { id: 'analytics', label: 'Analytics', icon: 'BarChart3' },
+      { id: 'places', label: 'Places', icon: 'BarChart3' },
       { id: 'content', label: 'Content', icon: 'Package' }
     ]
   }

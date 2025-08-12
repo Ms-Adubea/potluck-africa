@@ -27,7 +27,7 @@ const AddUsers = () => {
   const roles = [
     { value: 'potchef', label: '🍳 Chef/Potchef', description: 'Cook and share your homemade meals' },
     { value: 'potlucky', label: '🍽️ Customer/Potlucky', description: 'Discover and order amazing home-cooked meals' },
-    { value: 'franchisee', label: '🏢 Manager/Franchisee', description: 'Manage and approve local operations' }
+    // { value: 'franchisee', label: '🏢 Manager/Franchisee', description: 'Manage and approve local operations' }
   ];
 
   const validateForm = () => {

@@ -1,4 +1,3 @@
-// 📁 src/pages/admin/AllFranchisees.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
@@ -20,6 +19,13 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../services/config';
+import { 
+  apiGetAllFranchisees, 
+  apiDeleteFranchisee, 
+  apiGetFranchiseeById,
+  apiUpdateFranchiseeText,
+  apiUpdateFranchiseeImages 
+} from '../../services/admin';
 
 const FranchiseeManagement = () => {
   const [franchisees, setFranchisees] = useState([]);
@@ -30,6 +36,10 @@ const FranchiseeManagement = () => {
   const [selectedFranchisee, setSelectedFranchisee] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
+  const [editErrors, setEditErrors] = useState({});
   const navigate = useNavigate();
 
   // Fetch all franchisees
@@ -38,9 +48,9 @@ const FranchiseeManagement = () => {
     setError(null);
     
     try {
-      const response = await apiClient.get('/franchisees');
-      setFranchisees(response.data);
-      setFilteredFranchisees(response.data);
+      const data = await apiGetAllFranchisees();
+      setFranchisees(data);
+      setFilteredFranchisees(data);
     } catch (error) {
       console.error('Fetch franchisees error:', error);
       setError(error.response?.data?.message || 'Failed to fetch franchisees');
@@ -77,7 +87,7 @@ const FranchiseeManagement = () => {
     setDeleteLoading(true);
     
     try {
-      await apiClient.delete(`/franchisees/${franchiseeId}`);
+      await apiDeleteFranchisee(franchiseeId);
       setFranchisees(prev => prev.filter(f => f.id !== franchiseeId));
       setFilteredFranchisees(prev => prev.filter(f => f.id !== franchiseeId));
       alert('Franchisee deleted successfully');
@@ -86,6 +96,100 @@ const FranchiseeManagement = () => {
       alert(error.response?.data?.message || 'Failed to delete franchisee');
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  // Handle edit franchisee
+  const handleEdit = async (franchisee) => {
+    setEditFormData({
+      businessName: franchisee.businessName || '',
+      locationAddress: franchisee.locationAddress || '',
+      googleMapsLink: franchisee.googleMapsLink || '',
+      contactNumber: franchisee.contactNumber || '',
+      contactPerson: franchisee.contactPerson || '',
+      description: franchisee.description || ''
+    });
+    setSelectedFranchisee(franchisee);
+    setShowEditModal(true);
+    setEditErrors({});
+  };
+
+  // Validate edit form
+  const validateEditForm = () => {
+    const newErrors = {};
+    
+    if (!editFormData.businessName?.trim()) {
+      newErrors.businessName = 'Business name is required';
+    }
+    
+    if (!editFormData.locationAddress?.trim()) {
+      newErrors.locationAddress = 'Location address is required';
+    }
+    
+    if (!editFormData.contactNumber?.trim()) {
+      newErrors.contactNumber = 'Contact number is required';
+    } else if (!/^[\+]?[\d\s\-\(\)]+$/.test(editFormData.contactNumber)) {
+      newErrors.contactNumber = 'Please enter a valid phone number';
+    }
+    
+    if (!editFormData.contactPerson?.trim()) {
+      newErrors.contactPerson = 'Contact person is required';
+    }
+    
+    if (!editFormData.description?.trim()) {
+      newErrors.description = 'Description is required';
+    }
+
+    if (editFormData.googleMapsLink && !isValidUrl(editFormData.googleMapsLink)) {
+      newErrors.googleMapsLink = 'Please enter a valid Google Maps URL';
+    }
+    
+    setEditErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const isValidUrl = (string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  // Submit edit form
+  const handleEditSubmit = async () => {
+    if (!validateEditForm()) return;
+
+    setEditLoading(true);
+    
+    try {
+      const updatedData = await apiUpdateFranchiseeText(selectedFranchisee.id, editFormData);
+      
+      // Update the franchisees in state
+      setFranchisees(prev => prev.map(f => 
+        f.id === selectedFranchisee.id ? { ...f, ...updatedData } : f
+      ));
+      setFilteredFranchisees(prev => prev.map(f => 
+        f.id === selectedFranchisee.id ? { ...f, ...updatedData } : f
+      ));
+      
+      setShowEditModal(false);
+      setSelectedFranchisee(null);
+      alert('Franchisee updated successfully!');
+    } catch (error) {
+      console.error('Update franchisee error:', error);
+      alert(error.response?.data?.message || 'Failed to update franchisee');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleEditInputChange = (field, value) => {
+    setEditFormData(prev => ({ ...prev, [field]: value }));
+    
+    if (editErrors[field]) {
+      setEditErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -98,12 +202,181 @@ const FranchiseeManagement = () => {
     });
   };
 
+  // Edit franchisee modal
+  const EditFranchiseeModal = ({ franchisee, onClose }) => {
+    if (!franchisee) return null;
+
+    return (
+      <div className="fixed inset-0 backdrop-blur-sm bg-white bg-opacity-30 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center">
+              <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mr-3">
+                <Edit3 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Edit Franchisee</h2>
+                <p className="text-sm text-gray-600">{franchisee.businessName}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Form */}
+          <div className="p-6 space-y-5">
+            {/* Business Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Business Name *
+              </label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={editFormData.businessName}
+                  onChange={(e) => handleEditInputChange('businessName', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                    editErrors.businessName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {editErrors.businessName && <p className="mt-1 text-sm text-red-600">{editErrors.businessName}</p>}
+            </div>
+
+            {/* Location Address */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Location Address *
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <textarea
+                  value={editFormData.locationAddress}
+                  onChange={(e) => handleEditInputChange('locationAddress', e.target.value)}
+                  rows={3}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none ${
+                    editErrors.locationAddress ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {editErrors.locationAddress && <p className="mt-1 text-sm text-red-600">{editErrors.locationAddress}</p>}
+            </div>
+
+            {/* Google Maps Link */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Google Maps Link (Optional)
+              </label>
+              <div className="relative">
+                <ExternalLink className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="url"
+                  value={editFormData.googleMapsLink}
+                  onChange={(e) => handleEditInputChange('googleMapsLink', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                    editErrors.googleMapsLink ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {editErrors.googleMapsLink && <p className="mt-1 text-sm text-red-600">{editErrors.googleMapsLink}</p>}
+            </div>
+
+            {/* Contact Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Contact Number *
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="tel"
+                  value={editFormData.contactNumber}
+                  onChange={(e) => handleEditInputChange('contactNumber', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                    editErrors.contactNumber ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {editErrors.contactNumber && <p className="mt-1 text-sm text-red-600">{editErrors.contactNumber}</p>}
+            </div>
+
+            {/* Contact Person */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Contact Person *
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={editFormData.contactPerson}
+                  onChange={(e) => handleEditInputChange('contactPerson', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                    editErrors.contactPerson ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {editErrors.contactPerson && <p className="mt-1 text-sm text-red-600">{editErrors.contactPerson}</p>}
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description *
+              </label>
+              <textarea
+                value={editFormData.description}
+                onChange={(e) => handleEditInputChange('description', e.target.value)}
+                rows={4}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none ${
+                  editErrors.description ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {editErrors.description && <p className="mt-1 text-sm text-red-600">{editErrors.description}</p>}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                onClick={onClose}
+                disabled={editLoading}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSubmit}
+                disabled={editLoading}
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+              >
+                {editLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Franchisee'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // View franchisee details modal
   const FranchiseeModal = ({ franchisee, onClose }) => {
     if (!franchisee) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 backdrop-blur-sm bg-white bg-opacity-30 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -407,7 +680,7 @@ const FranchiseeManagement = () => {
 
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => navigate(`/dashboard/admin/franchisees/${franchisee.id}/edit`)}
+                        onClick={() => handleEdit(franchisee)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                         title="Edit"
                       >
@@ -445,13 +718,25 @@ const FranchiseeManagement = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
       {showModal && (
         <FranchiseeModal
           franchisee={selectedFranchisee}
           onClose={() => {
             setShowModal(false);
             setSelectedFranchisee(null);
+          }}
+        />
+      )}
+
+      {showEditModal && (
+        <EditFranchiseeModal
+          franchisee={selectedFranchisee}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedFranchisee(null);
+            setEditFormData({});
+            setEditErrors({});
           }}
         />
       )}

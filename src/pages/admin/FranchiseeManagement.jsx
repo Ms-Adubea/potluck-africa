@@ -1,158 +1,95 @@
+// 📁 src/pages/admin/AllFranchisees.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, 
+  Building2, 
+  Loader2, 
+  Search, 
   MapPin, 
   Phone, 
-  Mail, 
-  Calendar, 
-  Building2, 
-  Search, 
-  Filter, 
-  MoreVertical,
+  User, 
+  ExternalLink, 
   Eye,
-  Edit3,
+  X, 
+  Edit3, 
   Trash2,
   Plus,
-  ChevronDown,
+  Calendar,
+  Image as ImageIcon,
+  AlertCircle,
   RefreshCw
 } from 'lucide-react';
-
-// Mock API function - replace with your actual API import
-const apiGetAllFranchisees = async () => {
-  // Simulating API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Mock data - replace with actual API call
-  return {
-    data: [
-      {
-        id: 1,
-        name: "Metro Food Hub",
-        ownerName: "Sarah Johnson",
-        email: "sarah@metrofoodhub.com",
-        phone: "+1 (555) 123-4567",
-        location: "New York, NY",
-        address: "123 Broadway Street, New York, NY 10001",
-        status: "active",
-        joinedDate: "2024-01-15",
-        totalChefs: 12,
-        totalOrders: 450,
-        revenue: 25000
-      },
-      {
-        id: 2,
-        name: "Downtown Delights",
-        ownerName: "Mike Chen",
-        email: "mike@downtowndelights.com",
-        phone: "+1 (555) 234-5678",
-        location: "Los Angeles, CA",
-        address: "456 Main Street, Los Angeles, CA 90210",
-        status: "active",
-        joinedDate: "2024-02-20",
-        totalChefs: 8,
-        totalOrders: 320,
-        revenue: 18500
-      },
-      {
-        id: 3,
-        name: "Coastal Kitchen Co.",
-        ownerName: "Emily Rodriguez",
-        email: "emily@coastalkitchen.com",
-        phone: "+1 (555) 345-6789",
-        location: "Miami, FL",
-        address: "789 Ocean Drive, Miami, FL 33139",
-        status: "pending",
-        joinedDate: "2024-03-10",
-        totalChefs: 5,
-        totalOrders: 150,
-        revenue: 8200
-      },
-      {
-        id: 4,
-        name: "Urban Eats",
-        ownerName: "David Kim",
-        email: "david@urbaneats.com",
-        phone: "+1 (555) 456-7890",
-        location: "Chicago, IL",
-        address: "321 State Street, Chicago, IL 60601",
-        status: "suspended",
-        joinedDate: "2023-11-05",
-        totalChefs: 15,
-        totalOrders: 680,
-        revenue: 32000
-      }
-    ],
-    total: 4
-  };
-};
+import { Link, useNavigate } from 'react-router-dom';
+import { apiClient } from '../../services/config';
 
 const FranchiseeManagement = () => {
   const [franchisees, setFranchisees] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [filteredFranchisees, setFilteredFranchisees] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [selectedFranchisee, setSelectedFranchisee] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Fetch franchisees on component mount
+  // Fetch all franchisees
+  const fetchFranchisees = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiClient.get('/franchisees');
+      setFranchisees(response.data);
+      setFilteredFranchisees(response.data);
+    } catch (error) {
+      console.error('Fetch franchisees error:', error);
+      setError(error.response?.data?.message || 'Failed to fetch franchisees');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchFranchisees();
   }, []);
 
-  const fetchFranchisees = async () => {
+  // Filter franchisees based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredFranchisees(franchisees);
+    } else {
+      const filtered = franchisees.filter(franchisee =>
+        franchisee.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        franchisee.locationAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        franchisee.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        franchisee.contactNumber?.includes(searchTerm)
+      );
+      setFilteredFranchisees(filtered);
+    }
+  }, [searchTerm, franchisees]);
+
+  // Handle delete franchisee
+  const handleDelete = async (franchiseeId) => {
+    if (!window.confirm('Are you sure you want to delete this franchisee? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    
     try {
-      setLoading(true);
-      setError(null);
-      const response = await apiGetAllFranchisees();
-      setFranchisees(response.data || []);
-    } catch (err) {
-      setError('Failed to fetch franchisees. Please try again.');
-      console.error('Error fetching franchisees:', err);
+      await apiClient.delete(`/franchisees/${franchiseeId}`);
+      setFranchisees(prev => prev.filter(f => f.id !== franchiseeId));
+      setFilteredFranchisees(prev => prev.filter(f => f.id !== franchiseeId));
+      alert('Franchisee deleted successfully');
+    } catch (error) {
+      console.error('Delete franchisee error:', error);
+      alert(error.response?.data?.message || 'Failed to delete franchisee');
     } finally {
-      setLoading(false);
+      setDeleteLoading(false);
     }
   };
 
-  // Filter and sort franchisees
-  const filteredFranchisees = franchisees
-    .filter(franchisee => {
-      const matchesSearch = franchisee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           franchisee.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           franchisee.location.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || franchisee.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      let aValue = a[sortBy];
-      let bValue = b[sortBy];
-      
-      if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-      
-      if (sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      active: 'bg-green-100 text-green-800 border-green-200',
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      suspended: 'bg-red-100 text-red-800 border-red-200'
-    };
-    
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusConfig[status]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
-  };
-
+  // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -161,241 +98,362 @@ const FranchiseeManagement = () => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  // View franchisee details modal
+  const FranchiseeModal = ({ franchisee, onClose }) => {
+    if (!franchisee) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center">
+              <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mr-3">
+                <Building2 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{franchisee.businessName}</h2>
+                <p className="text-sm text-gray-600">Franchisee Details</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 space-y-6">
+            {/* Images */}
+            {franchisee.images && franchisee.images.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Images</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {franchisee.images.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={image}
+                        alt={`${franchisee.businessName} ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                        onError={(e) => {
+                          e.target.src = '/api/placeholder/150/100';
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Contact Person</h3>
+                <div className="flex items-center text-gray-900">
+                  <User className="h-4 w-4 mr-2 text-gray-400" />
+                  {franchisee.contactPerson}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Contact Number</h3>
+                <div className="flex items-center text-gray-900">
+                  <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                  {franchisee.contactNumber}
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Address</h3>
+                <div className="flex items-start text-gray-900">
+                  <MapPin className="h-4 w-4 mr-2 text-gray-400 mt-1 flex-shrink-0" />
+                  <span>{franchisee.locationAddress}</span>
+                </div>
+              </div>
+
+              {franchisee.googleMapsLink && (
+                <div className="md:col-span-2">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Google Maps</h3>
+                  <a
+                    href={franchisee.googleMapsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-orange-600 hover:text-orange-700 transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View on Google Maps
+                  </a>
+                </div>
+              )}
+
+              <div className="md:col-span-2">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
+                <p className="text-gray-900 leading-relaxed">{franchisee.description}</p>
+              </div>
+
+              {franchisee.createdAt && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Created</h3>
+                  <div className="flex items-center text-gray-900">
+                    <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                    {formatDate(franchisee.createdAt)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  if (loading) {
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded"></div>
-            ))}
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-red-50 to-orange-100">
+        <div className="text-center">
+          <div className="p-4 bg-white rounded-full shadow-lg mb-4 inline-block">
+            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
+          <p className="text-gray-600 font-medium">Loading franchisees...</p>
         </div>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={fetchFranchisees}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors inline-flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Try Again
-          </button>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-red-50 to-orange-100 p-4">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+          <div className="p-3 bg-red-100 rounded-full inline-block mb-4">
+            <AlertCircle className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Franchisees</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="space-x-3">
+            <button
+              onClick={fetchFranchisees}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors inline-flex items-center"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </button>
+            <Link
+              to="/dashboard/admin"
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors inline-block"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Building2 className="w-6 h-6" />
-            Franchisee Management
-          </h1>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add Franchisee
-          </button>
-        </div>
-        
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{franchisees.length}</div>
-              <div className="text-sm text-gray-600">Total Franchisees</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {franchisees.filter(f => f.status === 'active').length}
-              </div>
-              <div className="text-sm text-gray-600">Active</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {franchisees.filter(f => f.status === 'pending').length}
-              </div>
-              <div className="text-sm text-gray-600">Pending</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {franchisees.reduce((sum, f) => sum + f.totalChefs, 0)}
-              </div>
-              <div className="text-sm text-gray-600">Total Chefs</div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-red-50 to-orange-100 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full">
+              <Building2 className="h-8 w-8 text-white" />
             </div>
           </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Franchisees</h1>
+          <p className="text-gray-600">Manage your franchisee locations</p>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        {/* Controls */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search franchisees..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
               />
             </div>
-          </div>
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="suspended">Suspended</option>
-          </select>
-          
-          <select
-            value={`${sortBy}-${sortOrder}`}
-            onChange={(e) => {
-              const [field, order] = e.target.value.split('-');
-              setSortBy(field);
-              setSortOrder(order);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="name-asc">Name A-Z</option>
-            <option value="name-desc">Name Z-A</option>
-            <option value="joinedDate-desc">Newest First</option>
-            <option value="joinedDate-asc">Oldest First</option>
-            <option value="revenue-desc">Highest Revenue</option>
-            <option value="totalChefs-desc">Most Chefs</option>
-          </select>
-          
-          <button
-            onClick={fetchFranchisees}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors inline-flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-        </div>
-      </div>
 
-      {/* Results count */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">
-          Showing {filteredFranchisees.length} of {franchisees.length} franchisees
-        </p>
-      </div>
-
-      {/* Franchisees Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredFranchisees.map((franchisee) => (
-          <div key={franchisee.id} className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{franchisee.name}</h3>
-                  <p className="text-sm text-gray-600 flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {franchisee.ownerName}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(franchisee.status)}
-                  <div className="relative">
-                    <button className="p-1 hover:bg-gray-100 rounded">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="w-4 h-4" />
-                  <span>{franchisee.location}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Mail className="w-4 h-4" />
-                  <span>{franchisee.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Phone className="w-4 h-4" />
-                  <span>{franchisee.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Calendar className="w-4 h-4" />
-                  <span>Joined {formatDate(franchisee.joinedDate)}</span>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-lg font-semibold text-gray-900">{franchisee.totalChefs}</div>
-                    <div className="text-xs text-gray-600">Chefs</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-gray-900">{franchisee.totalOrders}</div>
-                    <div className="text-xs text-gray-600">Orders</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-gray-900">{formatCurrency(franchisee.revenue)}</div>
-                    <div className="text-xs text-gray-600">Revenue</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-4 pt-4 border-t">
-                <button className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm inline-flex items-center justify-center gap-1">
-                  <Eye className="w-4 h-4" />
-                  View Details
-                </button>
-                <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Edit3 className="w-4 h-4" />
-                </button>
-                <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Actions */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={fetchFranchisees}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </button>
+              <Link
+                to="/dashboard/admin/add-franchisee"
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all inline-flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Franchisee
+              </Link>
             </div>
           </div>
-        ))}
+
+          {/* Stats */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Showing <span className="font-medium">{filteredFranchisees.length}</span> of{' '}
+              <span className="font-medium">{franchisees.length}</span> franchisees
+            </p>
+          </div>
+        </div>
+
+        {/* Franchisees Grid */}
+        {filteredFranchisees.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+            <div className="p-3 bg-gray-100 rounded-full inline-block mb-4">
+              <Building2 className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Franchisees Found</h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm ? 'No franchisees match your search criteria.' : 'No franchisees have been added yet.'}
+            </p>
+            {!searchTerm && (
+              <Link
+                to="/dashboard/admin/add-franchisee"
+                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all inline-flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Franchisee
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredFranchisees.map((franchisee) => (
+              <div key={franchisee.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                {/* Image */}
+                <div className="relative h-48 bg-gray-200">
+                  {franchisee.images && franchisee.images.length > 0 ? (
+                    <img
+                      src={franchisee.images[0]}
+                      alt={franchisee.businessName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = '/api/placeholder/400/200';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                  {franchisee.images && franchisee.images.length > 1 && (
+                    <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full">
+                      +{franchisee.images.length - 1} more
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
+                    {franchisee.businessName}
+                  </h3>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-start text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <span className="line-clamp-2">{franchisee.locationAddress}</span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm text-gray-600">
+                      <User className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="line-clamp-1">{franchisee.contactPerson}</span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                      <span>{franchisee.contactNumber}</span>
+                    </div>
+                  </div>
+
+                  {franchisee.description && (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                      {franchisee.description}
+                    </p>
+                  )}
+
+                  {franchisee.createdAt && (
+                    <div className="text-xs text-gray-500 mb-4">
+                      Created {formatDate(franchisee.createdAt)}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        setSelectedFranchisee(franchisee);
+                        setShowModal(true);
+                      }}
+                      className="flex items-center text-orange-600 hover:text-orange-700 text-sm font-medium transition-colors"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Details
+                    </button>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => navigate(`/dashboard/admin/franchisees/${franchisee.id}/edit`)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Edit"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDelete(franchisee.id)}
+                        disabled={deleteLoading}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                        title="Delete"
+                      >
+                        {deleteLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Back Link */}
+        <div className="mt-8 text-center">
+          <Link
+            to="/dashboard/admin"
+            className="text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors"
+          >
+            ← Back to Admin Dashboard
+          </Link>
+        </div>
       </div>
 
-      {filteredFranchisees.length === 0 && (
-        <div className="text-center py-12">
-          <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No franchisees found</h3>
-          <p className="text-gray-600 mb-4">
-            {searchTerm || statusFilter !== 'all' 
-              ? 'Try adjusting your search or filters' 
-              : 'Get started by adding your first franchisee'}
-          </p>
-          {!searchTerm && statusFilter === 'all' && (
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add Franchisee
-            </button>
-          )}
-        </div>
+      {/* Modal */}
+      {showModal && (
+        <FranchiseeModal
+          franchisee={selectedFranchisee}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedFranchisee(null);
+          }}
+        />
       )}
     </div>
   );

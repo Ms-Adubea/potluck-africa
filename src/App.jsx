@@ -319,7 +319,15 @@ useEffect(() => {
               )
             },
             { 
-              path: "places", 
+              path: "franchisees", 
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <FranchiseeManagement />
+                </ProtectedRoute>
+              )
+            },
+            { 
+              path: "franchisees/:id/edit", 
               element: (
                 <ProtectedRoute requiredRole="admin">
                   <FranchiseeManagement />

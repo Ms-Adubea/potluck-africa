@@ -40,12 +40,6 @@ export const apiGetOnePendingUser = async (id) => {
 
 // ===== FRANCHISEE MANAGEMENT =====
 
-// GET all franchisees
-// export const apiGetAllFranchisees = async () => {
-//   const response = await apiClient.get('/franchisees');
-//   return response.data;
-// };
-
 // POST add new franchisee
 export const apiAddFranchisee = async (formData) => {
   const response = await apiClient.post('/franchisees', formData, {
@@ -78,25 +72,21 @@ export const apiUpdateFranchiseeImages = async (franchiseeId, formData) => {
   return response.data;
 };
 
-// DELETE franchisee
-// export const apiDeleteFranchisee = async (franchiseeId) => {
-//   const response = await apiClient.delete(`/franchisees/${franchiseeId}`);
-//   return response.data;
-// };
-
 // GET all franchisees
 export const apiGetAllFranchisees = async () => {
   const response = await apiClient.get('/franchisees');
   return response.data;
 };
 
-// DELETE franchisee
-export const apiDeleteFranchisee = async (franchiseeId) => {
-  const response = await apiClient.delete(`/franchisees/${franchiseeId}`);
+// PATCH remove specific franchisee images (replace the existing apiDeleteFranchisee function)
+export const apiRemoveFranchiseeImages = async (franchiseeId, imageUrls) => {
+  const response = await apiClient.patch(`/franchisees/${franchiseeId}/remove-images`, {
+    imageUrls: imageUrls  // Send array of image URLs to be deleted
+  });
   return response.data;
 };
 
-// GET single franchisee
+// GET single franchisee (alias for consistency)
 export const apiGetFranchisee = async (franchiseeId) => {
   const response = await apiClient.get(`/franchisees/${franchiseeId}`);
   return response.data;

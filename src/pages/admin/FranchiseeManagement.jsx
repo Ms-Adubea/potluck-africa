@@ -21,7 +21,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../services/config';
 import { 
   apiGetAllFranchisees, 
-  apiDeleteFranchisee, 
+   
   apiGetFranchiseeById
 } from '../../services/admin';
 import EditFranchiseeModal from './EditFranchisee';

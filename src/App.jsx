@@ -37,6 +37,7 @@ import {
 import AddFranchisee from "./pages/admin/AddFranchisee";
 import AddUsers from "./pages/admin/AddUsers";
 import FranchiseeManagement from "./pages/admin/FranchiseeManagement";
+import EditFranchiseeModal from "./pages/admin/EditFranchisee";
 
 function App() {
   useEffect(() => {
@@ -328,14 +329,14 @@ function App() {
                 </ProtectedRoute>
               ),
             },
-            // {
-            //   path: "franchisees/:id/edit",
-            //   element: (
-            //     <ProtectedRoute requiredRole="admin">
-            //       <EditFranchisee />
-            //     </ProtectedRoute>
-            //   ),
-            // },
+            {
+              path: "franchisees/:id/edit",
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <EditFranchiseeModal />
+                </ProtectedRoute>
+              ),
+            },
             {
               path: "content",
               element: (

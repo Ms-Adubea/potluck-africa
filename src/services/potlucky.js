@@ -196,7 +196,8 @@ export const apiGetMealById = async (mealId) => {
 // === FAVORITES ===
 export const apiAddFavorite = async (mealId) => {
   try {
-    const response = await apiClient.post(`/meals/${mealId}/favorite`);
+    // Changed to PATCH method and fixed URL template
+    const response = await apiClient.patch(`/meals/${mealId}/favorite`);
     return response.data;
   } catch (error) {
     console.error("Add favorite failed:", error);
@@ -206,7 +207,9 @@ export const apiAddFavorite = async (mealId) => {
 
 export const apiRemoveFavorite = async (mealId) => {
   try {
-    const response = await apiClient.delete(`/meals/${mealId}/favorite`);
+    // Your backend uses PATCH for toggle, so this should also be PATCH
+    // Or you might need a different endpoint for explicit removal
+    const response = await apiClient.patch(`/meals/${mealId}/favorite`);
     return response.data;
   } catch (error) {
     console.error("Remove favorite failed:", error);

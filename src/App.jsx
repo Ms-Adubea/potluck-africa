@@ -193,7 +193,9 @@ function App() {
               path: "favorites",
               element: (
                 <ProtectedRoute requiredRole="potlucky">
+                  <FavoritesProvider>
                   <PotluckyFavorites />
+                  </FavoritesProvider>
                 </ProtectedRoute>
               ),
             },

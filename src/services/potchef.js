@@ -102,6 +102,8 @@ export const apiUpdateOrderStatus = async (orderId, newStatus) => {
 export const apiGetChefsMeals = async () => {
   try {
     const response = await apiClient.get('/meals/mine');
+    console.log('API Response:', response.data); // Add this for debugging
+    
     // For array response
     if (Array.isArray(response.data)) {
       return {
@@ -109,10 +111,12 @@ export const apiGetChefsMeals = async () => {
         assets: response.data
       };
     }
-    // For object response with assets property
+    
+    // For object response - check for "meals" property instead of "assets"
     return {
       count: response.data?.count || 0,
-      assets: Array.isArray(response.data?.assets) ? response.data.assets : []
+      assets: Array.isArray(response.data?.meals) ? response.data.meals : []
+      //                                    ^^^^^ Changed from "assets" to "meals"
     };
   } catch (error) {
     console.error('Error fetching chef meals:', error);

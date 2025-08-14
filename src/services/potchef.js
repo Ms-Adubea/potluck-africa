@@ -159,8 +159,9 @@ export const apiDeleteMeal = async (id) => {
 };
 
 export const apiToggleMealAvailability = async (id, currentStatus) => {
-  // Capitalize the status values to match backend expectations
-  const newStatus = currentStatus === "available" ? "Unavailable" : "Available";
+  // Use capitalized status values to match backend expectations
+  const isCurrentlyAvailable = currentStatus === "Available" || currentStatus === "Pending";
+  const newStatus = isCurrentlyAvailable ? "Unavailable" : "Available";
 
   try {
     const response = await apiClient.patch(`/meals/${id}/status`, {

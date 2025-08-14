@@ -31,10 +31,13 @@ const MyMeals = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [updating, setUpdating] = useState(false);
 
-
-
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Helper function to normalize status for consistent comparisons
+  const isAvailableStatus = (status) => {
+    return status === "Available" || status === "Pending";
+  };
 
   // Fetch chef's meals on component mount
   useEffect(() => {
@@ -156,20 +159,25 @@ const MyMeals = () => {
   };
 
   const handleToggleAvailability = async (mealId, currentStatus) => {
-  setUpdating(true);
-  try {
-    const updatedMeal = await apiToggleMealAvailability(mealId, currentStatus);
-    // Update local state with the new meal data
-    setMeals(prev =>
-      prev.map(meal => (meal.id === mealId ? updatedMeal : meal))
-    );
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setUpdating(false);
-  }
-};
-
+    setUpdating(true);
+    try {
+      const updatedMeal = await apiToggleMealAvailability(mealId, currentStatus);
+      // Update local state with the new meal data
+      setMeals(prev =>
+        prev.map(meal => (meal.id === mealId ? updatedMeal : meal))
+      );
+      
+      // If this is the selected meal, update it too
+      if (selectedMeal && selectedMeal.id === mealId) {
+        setSelectedMeal(updatedMeal);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update meal availability. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const handleDeleteMeal = async (mealId) => {
     if (!window.confirm("Are you sure you want to delete this meal?")) {
@@ -194,18 +202,18 @@ const MyMeals = () => {
   };
 
   const filteredMeals = meals.filter((meal) => {
-  const matchesSearch =
-    meal.mealName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meal.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meal.cuisine?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      meal.mealName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      meal.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      meal.cuisine?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const matchesStatus = 
-    filterStatus === 'all' || 
-    (filterStatus === 'available' && (meal.status === 'available' || meal.status === 'Pending')) ||
-    (filterStatus === 'unavailable' && meal.status !== 'available' && meal.status !== 'Pending');
+    const matchesStatus = 
+      filterStatus === 'all' || 
+      (filterStatus === 'available' && isAvailableStatus(meal.status)) ||
+      (filterStatus === 'unavailable' && !isAvailableStatus(meal.status));
 
-  return matchesSearch && matchesStatus;
-});
+    return matchesSearch && matchesStatus;
+  });
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -312,21 +320,13 @@ const MyMeals = () => {
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-green-600">
-              {
-                meals.filter(
-                  (m) => m.status === "available" || m.status === "Pending"
-                ).length
-              }
+              {meals.filter(meal => isAvailableStatus(meal.status)).length}
             </div>
             <div className="text-sm text-gray-500">Available</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-red-600">
-              {
-                meals.filter(
-                  (m) => m.status !== "available" && m.status !== "Pending"
-                ).length
-              }
+              {meals.filter(meal => !isAvailableStatus(meal.status)).length}
             </div>
             <div className="text-sm text-gray-500">Unavailable</div>
           </div>
@@ -364,17 +364,15 @@ const MyMeals = () => {
                         className="w-20 h-20 object-cover rounded-lg"
                       />
                       <button
-  onClick={() => handleToggleAvailability(meal.id, meal.status)}
-
+                        onClick={() => handleToggleAvailability(meal.id, meal.status)}
+                        disabled={updating}
                         className={`absolute -top-2 -right-2 p-1 rounded-full ${
-                          meal.status?.toLowerCase() === "available"
-
+                          isAvailableStatus(meal.status)
                             ? "bg-green-500"
                             : "bg-gray-500"
-                        } text-white shadow-sm`}
+                        } text-white shadow-sm ${updating ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
                       >
-                        {meal.status === "available" ||
-                        meal.status === "unavailable" ? (
+                        {isAvailableStatus(meal.status) ? (
                           <Eye className="w-3 h-3" />
                         ) : (
                           <EyeOff className="w-3 h-3" />
@@ -411,14 +409,12 @@ const MyMeals = () => {
                         </div>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            meal.status === "available"
+                            isAvailableStatus(meal.status)
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {meal.status === "available"
-                            ? "Available"
-                            : "Unavailable"}
+                          {meal.status}
                         </span>
                       </div>
 

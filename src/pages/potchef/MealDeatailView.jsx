@@ -103,13 +103,13 @@ const MealDetailView = ({
           <button
   onClick={() => onToggleAvailability(meal.id, meal.status)}
             className={`p-3 rounded-full ${
-              meal.status === "available" ? "bg-green-500" : "bg-gray-500"
+              meal.status === "Available" ? "bg-green-500" : "bg-gray-500"
             } text-white shadow-lg`}
             disabled={updating}
           >
             {updating ? (
               <Loader2 className="w-5 h-5 animate-spin" />
-            ) : meal.status === "available" ? (
+            ) : meal.status === "Available" ? (
               <Eye className="w-5 h-5" />
             ) : (
               <EyeOff className="w-5 h-5" />
@@ -119,14 +119,14 @@ const MealDetailView = ({
         <div className="absolute bottom-4 left-4">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
-              meal.status === "available"
+              meal.status === "Available"
                 ? "bg-green-100 text-green-800"
                 : meal.status === "Pending"
                 ? "bg-yellow-100 text-yellow-800"
                 : "bg-red-100 text-red-800"
             }`}
           >
-            {meal.status === "available"
+            {meal.status === "Available"
               ? "Available"
               : meal.status === "Pending"
               ? "Pending"

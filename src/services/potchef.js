@@ -134,6 +134,8 @@ export const apiGetChefsMealById = async (id) => {
   }
 };
 
+// Updated potchef.js API service
+
 export const apiUpdateMeal = async (id, formData) => {
   try {
     const response = await apiClient.patch(`/meals/${id}`, formData, {
@@ -141,7 +143,23 @@ export const apiUpdateMeal = async (id, formData) => {
         'Content-Type': 'multipart/form-data'
       }
     });
-    return response.data;
+    // Return the meal object directly from the response
+    return response.data.meal || response.data;
+  } catch (error) {
+    console.error('Error updating meal:', error);
+    throw error;
+  }
+};
+
+// Alternative approach if your API expects JSON for arrays:
+export const apiUpdateMealWithJSON = async (id, mealData) => {
+  try {
+    const response = await apiClient.patch(`/meals/${id}`, mealData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data.meal || response.data;
   } catch (error) {
     console.error('Error updating meal:', error);
     throw error;

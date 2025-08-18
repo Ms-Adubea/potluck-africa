@@ -133,94 +133,94 @@ const EditMeal = ({ meal, onSave, onCancel, isLoading }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!editedMeal.mealName && !editedMeal.name) {
-      showToast('Please enter a meal name', 'error');
-      return;
-    }
-    
-    if (!editedMeal.description) {
-      showToast('Please enter a description', 'error');
-      return;
-    }
-    
-    if (!editedMeal.price || editedMeal.price <= 0) {
-      showToast('Please enter a valid price', 'error');
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Validate required fields
+  if (!editedMeal.mealName && !editedMeal.name) {
+    showToast('Please enter a meal name', 'error');
+    return;
+  }
+  
+  if (!editedMeal.description) {
+    showToast('Please enter a description', 'error');
+    return;
+  }
+  
+  if (!editedMeal.price || editedMeal.price <= 0) {
+    showToast('Please enter a valid price', 'error');
+    return;
+  }
 
-    setIsSaving(true);
+  setIsSaving(true);
+  
+  try {
+    // Create FormData for API submission
+    const formData = new FormData();
     
-    try {
-      // Create FormData for API submission
-      const formData = new FormData();
-      
-      // Map the edited meal data to match API expectations
-      const mealData = {
-        id: editedMeal.id, // Include the meal ID for updates
-        mealName: editedMeal.name || editedMeal.mealName,
-        description: editedMeal.description,
-        price: parseFloat(editedMeal.price),
-        servings: parseInt(editedMeal.servings) || 1,
-        category: editedMeal.category || 'Main Course',
-        cuisine: editedMeal.cuisine || 'Local',
-        spiceLevel: editedMeal.spiceLevel || 'Mild',
-        dietaryRestrictions: editedMeal.dietaryRestrictions || [],
-        mainIngredients: editedMeal.mainIngredients || [],
-        cookingTime: parseInt(editedMeal.cookTime || editedMeal.cookingTime) || 30,
-        pickupLocation: editedMeal.location || editedMeal.pickupLocation || '',
-        availableFrom: editedMeal.availableFrom || "09:00",
-        availableTo: editedMeal.availableTo || "21:00",
-        nutritionInfo: editedMeal.nutritionInfo
-      };
-
-      // Append non-file data
-      Object.keys(mealData).forEach(key => {
-        if (Array.isArray(mealData[key])) {
-          // Handle arrays properly
-          mealData[key].forEach((item, index) => {
-            formData.append(`${key}[${index}]`, item);
-          });
-        } else if (typeof mealData[key] === 'object' && mealData[key] !== null) {
-          // Handle nested objects like nutritionInfo
-          Object.keys(mealData[key]).forEach(subKey => {
-            if (mealData[key][subKey]) {
-              formData.append(`${key}.${subKey}`, mealData[key][subKey]);
-            }
-          });
-        } else if (mealData[key] !== undefined && mealData[key] !== null) {
-          formData.append(key, mealData[key]);
+    // Basic meal data - match the API structure exactly
+    formData.append('mealName', editedMeal.name || editedMeal.mealName);
+    formData.append('description', editedMeal.description);
+    formData.append('price', parseFloat(editedMeal.price));
+    formData.append('servings', parseInt(editedMeal.servings) || 1);
+    formData.append('category', editedMeal.category || 'Main Course');
+    formData.append('cuisine', editedMeal.cuisine || 'Local');
+    formData.append('spiceLevel', editedMeal.spiceLevel || 'Mild');
+    formData.append('cookingTime', parseInt(editedMeal.cookTime || editedMeal.cookingTime) || 30);
+    formData.append('pickupLocation', editedMeal.location || editedMeal.pickupLocation || '');
+    
+    // Handle arrays properly - append each item individually
+    (editedMeal.dietaryRestrictions || []).forEach((restriction, index) => {
+      formData.append(`dietaryRestrictions[${index}]`, restriction);
+    });
+    
+    (editedMeal.mainIngredients || []).forEach((ingredient, index) => {
+      formData.append(`mainIngredients[${index}]`, ingredient);
+    });
+    
+    // Handle nutrition info properly - append each field individually
+    if (editedMeal.nutritionInfo) {
+      Object.keys(editedMeal.nutritionInfo).forEach(key => {
+        if (editedMeal.nutritionInfo[key]) {
+          formData.append(`nutritionInfo.${key}`, editedMeal.nutritionInfo[key]);
         }
       });
-
-      // Append selected image files
-      selectedImages.forEach((file, index) => {
-        formData.append('photos', file);
-      });
-
-      // Call the onSave function with proper error handling
-      const result = await onSave(formData, editedMeal.id);
-      
-      if (result && result.success !== false) {
-        showToast('Meal updated successfully!');
-        // Small delay to show success message before navigation
-        setTimeout(() => {
-          onCancel(); // This will navigate back to the detail view
-        }, 1000);
-      } else {
-        throw new Error(result?.message || 'Failed to update meal');
-      }
-      
-    } catch (error) {
-      console.error('Error updating meal:', error);
-      showToast(error.message || 'Failed to update meal. Please try again.', 'error');
-    } finally {
-      setIsSaving(false);
     }
-  };
+    
+    // Handle availability times if they exist
+    if (editedMeal.availableFrom) {
+      formData.append('availableFrom', editedMeal.availableFrom);
+    }
+    if (editedMeal.availableTo) {
+      formData.append('availableTo', editedMeal.availableTo);
+    }
+
+    // Append new image files only
+    selectedImages.forEach((file) => {
+      formData.append('photos', file);
+    });
+
+    // Call the onSave function with the meal ID
+    const result = await onSave(formData, editedMeal.id);
+    
+    if (result && result.success !== false) {
+      showToast('Meal updated successfully!');
+      // Small delay to show success message before navigation
+      setTimeout(() => {
+        onCancel(); // This will navigate back to the detail view
+      }, 1000);
+    } else {
+      throw new Error(result?.message || 'Failed to update meal');
+    }
+    
+  } catch (error) {
+    console.error('Error updating meal:', error);
+    showToast(error.message || 'Failed to update meal. Please try again.', 'error');
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   const commonDietaryRestrictions = [
     'Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Nut-Free', 

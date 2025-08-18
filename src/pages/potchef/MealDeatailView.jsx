@@ -22,6 +22,24 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+// const MealDetailView = ({
+//   meal,
+//   onBack,
+//   onEdit,
+//   onToggleAvailability,
+//   onDelete,
+//   updating,
+//   onMealUpdate, // New prop to handle meal updates
+// }) => {
+//   const [currentMeal, setCurrentMeal] = useState(meal);
+//   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+//   const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+//   // Update local state when meal prop changes
+//   useEffect(() => {
+//     setCurrentMeal(meal);
+//   }, [meal]);
+
 const MealDetailView = ({
   meal,
   onBack,
@@ -29,7 +47,7 @@ const MealDetailView = ({
   onToggleAvailability,
   onDelete,
   updating,
-  onMealUpdate, // New prop to handle meal updates
+  onMealUpdate, // Make sure this prop is passed from MyMeals
 }) => {
   const [currentMeal, setCurrentMeal] = useState(meal);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

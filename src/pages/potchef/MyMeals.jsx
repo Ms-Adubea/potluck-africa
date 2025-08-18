@@ -107,56 +107,41 @@ const MyMeals = () => {
     window.history.pushState({}, "", newUrl);
   };
 
-  const handleSaveEdit = async (updatedMealData) => {
-    try {
-      setUpdating(true);
-
-      // Create FormData for the API call
-      const formData = new FormData();
-
-      // Add all meal fields to FormData
-      Object.keys(updatedMealData).forEach((key) => {
-        if (key === "photos" && Array.isArray(updatedMealData[key])) {
-          // Handle photos array
-          updatedMealData[key].forEach((photo) => {
-            if (photo instanceof File) {
-              formData.append("photos", photo);
-            }
-          });
-        } else if (
-          key === "ingredients" ||
-          key === "allergens" ||
-          key === "dietaryRestrictions"
-        ) {
-          // Handle arrays
-          formData.append(key, JSON.stringify(updatedMealData[key]));
-        } else if (key === "nutritionInfo") {
-          // Handle nested object
-          formData.append(key, JSON.stringify(updatedMealData[key]));
-        } else if (key !== "photos") {
-          // Handle regular fields
-          formData.append(key, updatedMealData[key]);
-        }
-      });
-
-      const response = await apiUpdateMeal(selectedMeal.id, formData);
-
-      // Update meals list
-      setMeals((prevMeals) =>
-        prevMeals.map((meal) =>
-          meal.id === selectedMeal.id ? { ...meal, ...response.meal } : meal
-        )
-      );
-
-      setEditingMeal(null);
-      setSelectedMeal({ ...selectedMeal, ...response.meal });
-    } catch (err) {
-      console.error("Error updating meal:", err);
-      setError("Failed to update meal. Please try again.");
-    } finally {
-      setUpdating(false);
+const handleSaveEdit = async (formData, mealId) => {
+  try {
+    setUpdating(true);
+    
+    // Call the API with the FormData directly (EditMeal already creates it properly)
+    const response = await apiUpdateMeal(mealId, formData);
+    
+    // The API returns the meal object directly, not nested under response.meal
+    const updatedMeal = response; // Based on your API response example
+    
+    // Update the meals list with the updated meal
+    setMeals((prevMeals) =>
+      prevMeals.map((meal) =>
+        meal.id === mealId ? updatedMeal : meal
+      )
+    );
+    
+    // Update the selected meal if it's the one being edited
+    if (selectedMeal && selectedMeal.id === mealId) {
+      setSelectedMeal(updatedMeal);
     }
-  };
+    
+    // Clear editing state
+    setEditingMeal(null);
+    
+    return { success: true };
+  } catch (err) {
+    console.error("Error updating meal:", err);
+    setError("Failed to update meal. Please try again.");
+    return { success: false, message: err.message };
+  } finally {
+    setUpdating(false);
+  }
+};
+
 
   const handleToggleAvailability = async (mealId, currentStatus) => {
     setUpdating(true);

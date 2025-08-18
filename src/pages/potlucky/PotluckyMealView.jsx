@@ -8,13 +8,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   apiGetMealById, 
   apiAddFavorite, 
-  apiRemoveFavorite, 
-  apiCheckFavoriteStatus 
+  apiRemoveFavorite,  
 } from '../../services/potlucky';
 import OrderModal from './OrderModal';
 import Reviews from './Reviews';
-// import OrderModal from '../../components/OrderModal';
-// import Reviews from '../../components/Reviews';
+
 
 const PotluckyMealView = () => {
   const { mealId } = useParams();
@@ -49,19 +47,19 @@ const PotluckyMealView = () => {
   }, [mealId]);
 
   // Check favorite status
-  useEffect(() => {
-    const checkFavorite = async () => {
-      if (!mealId) return;
-      try {
-        const status = await apiCheckFavoriteStatus([mealId]);
-        setIsFavorite(status[mealId] || false);
-      } catch (error) {
-        console.error('Error checking favorite status:', error);
-      }
-    };
+  // useEffect(() => {
+  //   const checkFavorite = async () => {
+  //     if (!mealId) return;
+  //     try {
+  //       const status = await apiCheckFavoriteStatus([mealId]);
+  //       setIsFavorite(status[mealId] || false);
+  //     } catch (error) {
+  //       console.error('Error checking favorite status:', error);
+  //     }
+  //   };
 
-    checkFavorite();
-  }, [mealId]);
+  //   checkFavorite();
+  // }, [mealId]);
 
   // Reset active image when meal changes
   useEffect(() => {

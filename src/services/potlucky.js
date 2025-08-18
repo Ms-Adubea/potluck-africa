@@ -68,15 +68,15 @@ export const apiGetFavoriteMeals = async () => {
   }
 };
 
-export const apiCheckFavoriteStatus = async (mealIds) => {
-  try {
-    const response = await apiClient.post('/favorites/check', { mealIds });
-    return response.data; // Should return object like { mealId: boolean }
-  } catch (error) {
-    console.error('Error checking favorite status:', error);
-    throw error;
-  }
-};
+// export const apiCheckFavoriteStatus = async (mealIds) => {
+//   try {
+//     const response = await apiClient.post('/favorites/check', { mealIds });
+//     return response.data; // Should return object like { mealId: boolean }
+//   } catch (error) {
+//     console.error('Error checking favorite status:', error);
+//     throw error;
+//   }
+// };
 
 // // === ORDERS ===
 // export const apiCreateOrder = async (orderData) => {

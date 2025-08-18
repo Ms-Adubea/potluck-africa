@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Clock,
-  MapPin,
   Phone,
   User,
   CheckCircle,
@@ -11,6 +10,7 @@ import {
   Package,
 } from "lucide-react";
 import { apiGetChefOrders, apiUpdateOrderStatus } from "../../services/potchef";
+// import { apiGetChefOrders, apiUpdateOrderStatus } from "../services/potchef";
 
 const ChefOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -18,20 +18,6 @@ const ChefOrders = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-
-  // useEffect(() => {
-  //   const fetchOrders = async () => {
-  //     try {
-  //       const data = await apiGetChefOrders();
-  //       setOrders(data.orders); // assuming the API returns { orders: [...] }
-  //     } catch (error) {
-  //       console.error("Error fetching chef orders", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   fetchOrders();
-  // }, []);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -55,7 +41,7 @@ const ChefOrders = () => {
       const updatedOrder = await apiUpdateOrderStatus(orderId, newStatus);
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
-          order.id === orderId
+          order._id === orderId
             ? { ...order, status: updatedOrder.status }
             : order
         )
@@ -67,7 +53,8 @@ const ChefOrders = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    const normalizedStatus = status.toLowerCase();
+    switch (normalizedStatus) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "preparing":
@@ -75,6 +62,7 @@ const ChefOrders = () => {
       case "ready":
         return "bg-green-100 text-green-800 border-green-200";
       case "completed":
+      case "delivered":
         return "bg-gray-100 text-gray-800 border-gray-200";
       case "cancelled":
         return "bg-red-100 text-red-800 border-red-200";
@@ -84,7 +72,8 @@ const ChefOrders = () => {
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
+    const normalizedStatus = status.toLowerCase();
+    switch (normalizedStatus) {
       case "pending":
         return <AlertCircle className="w-4 h-4" />;
       case "preparing":
@@ -92,6 +81,7 @@ const ChefOrders = () => {
       case "ready":
         return <Package className="w-4 h-4" />;
       case "completed":
+      case "delivered":
         return <CheckCircle className="w-4 h-4" />;
       case "cancelled":
         return <XCircle className="w-4 h-4" />;
@@ -102,7 +92,7 @@ const ChefOrders = () => {
 
   const filteredOrders = orders.filter((order) => {
     if (activeFilter === "all") return true;
-    return order.status === activeFilter;
+    return order.status.toLowerCase() === activeFilter.toLowerCase();
   });
 
   const formatTime = (dateString) => {
@@ -113,27 +103,40 @@ const ChefOrders = () => {
     });
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   const filterOptions = [
     { value: "all", label: "All Orders", count: orders.length },
     {
       value: "pending",
       label: "Pending",
-      count: orders.filter((o) => o.status === "pending").length,
+      count: orders.filter((o) => o.status.toLowerCase() === "pending").length,
     },
     {
       value: "preparing",
       label: "Preparing",
-      count: orders.filter((o) => o.status === "preparing").length,
+      count: orders.filter((o) => o.status.toLowerCase() === "preparing").length,
     },
     {
       value: "ready",
       label: "Ready",
-      count: orders.filter((o) => o.status === "ready").length,
+      count: orders.filter((o) => o.status.toLowerCase() === "ready").length,
     },
     {
       value: "completed",
       label: "Completed",
-      count: orders.filter((o) => o.status === "completed").length,
+      count: orders.filter((o) => o.status.toLowerCase() === "completed" || o.status.toLowerCase() === "delivered").length,
+    },
+    {
+      value: "cancelled",
+      label: "Cancelled",
+      count: orders.filter((o) => o.status.toLowerCase() === "cancelled").length,
     },
   ];
 
@@ -200,7 +203,7 @@ const ChefOrders = () => {
         ) : (
           filteredOrders.map((order) => (
             <div
-              key={order.id}
+              key={order._id}
               className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
             >
               {/* Order Header */}
@@ -208,10 +211,10 @@ const ChefOrders = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      #{order.id}
+                      #{order._id.slice(-8)}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Ordered at {formatTime(order.orderTime)}
+                      Ordered on {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
                     </p>
                   </div>
                   <div
@@ -220,8 +223,7 @@ const ChefOrders = () => {
                     )}`}
                   >
                     {getStatusIcon(order.status)}
-                    {order.status.charAt(0).toUpperCase() +
-                      order.status.slice(1)}
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </div>
                 </div>
 
@@ -230,13 +232,13 @@ const ChefOrders = () => {
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium">
-                      {order.customerName}
+                      {order.buyer.firstName} {order.buyer.lastName}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Phone className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-600">
-                      {order.customerPhone}
+                      {order.buyer.phone}
                     </span>
                   </div>
                 </div>
@@ -245,82 +247,75 @@ const ChefOrders = () => {
                 <div className="bg-gray-50 rounded-lg p-3 mb-3">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium text-gray-900">
-                      {order.mealName}
+                      {order.meal.name || `Meal ID: ${order.meal._id.slice(-8)}`}
                     </h4>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">
                         Qty: {order.quantity}
                       </span>
                       <div className="flex items-center space-x-1">
-                        {/* <DollarSign className="w-4 h-4 text-green-600" /> */}
                         <span className="w-2 text-green-600">¢</span>
                         <span className="font-semibold text-green-600">
-                          {order.totalAmount}
+                          {order.totalPrice}
                         </span>
                       </div>
                     </div>
                   </div>
-                  {order.specialInstructions && (
+                  {order.notes && (
                     <p className="text-sm text-gray-600 italic">
-                      Note: {order.specialInstructions}
+                      Note: {order.notes}
                     </p>
                   )}
                 </div>
 
-                {/* Delivery Info */}
+                {/* Pickup Info */}
                 <div className="flex items-start space-x-2 mb-3">
-                  <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <Clock className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-gray-600">
-                      {order.deliveryAddress}
-                    </p>
-                    <p className="text-xs text-gray-500 flex items-center space-x-1 mt-1">
-                      <Clock className="w-3 h-3" />
-                      <span>
-                        Expected by {formatTime(order.estimatedDelivery)}
-                      </span>
+                      Pickup scheduled for {formatDate(order.pickupTime)} at {formatTime(order.pickupTime)}
                     </p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
-                  {order.status === "pending" && (
+                  {order.status.toLowerCase() === "pending" && (
                     <>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "preparing")}
+                        onClick={() => updateOrderStatus(order._id, "Preparing")}
                         className="flex-1 bg-orange-400 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-orange-500 transition-colors"
                       >
                         Accept & Start Cooking
                       </button>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "cancelled")}
+                        onClick={() => updateOrderStatus(order._id, "Cancelled")}
                         className="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
                       >
                         Decline
                       </button>
                     </>
                   )}
-                  {order.status === "preparing" && (
+                  {order.status.toLowerCase() === "preparing" && (
                     <button
-                      onClick={() => updateOrderStatus(order.id, "ready")}
+                      onClick={() => updateOrderStatus(order._id, "Ready")}
                       className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                     >
                       Mark as Ready
                     </button>
                   )}
-                  {order.status === "ready" && (
+                  {order.status.toLowerCase() === "ready" && (
                     <button
-                      onClick={() => updateOrderStatus(order.id, "completed")}
+                      onClick={() => updateOrderStatus(order._id, "Delivered")}
                       className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
                     >
-                      Mark as Completed
+                      Mark as Delivered
                     </button>
                   )}
-                  {(order.status === "completed" ||
-                    order.status === "cancelled") && (
+                  {(order.status.toLowerCase() === "delivered" ||
+                    order.status.toLowerCase() === "cancelled") && (
                     <div className="flex-1 text-center py-2 text-sm text-gray-500">
-                      Order {order.status}
+                      Order {order.status.toLowerCase()}
                     </div>
                   )}
                 </div>

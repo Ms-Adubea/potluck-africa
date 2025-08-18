@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
-  Filter, 
   Clock, 
   MapPin, 
   Star, 
@@ -15,10 +14,10 @@ import {
   Receipt,
   Calendar,
   Truck,
-  ThumbsUp,
-  ThumbsDown,
-  MoreHorizontal
+  User
 } from 'lucide-react';
+import { apiGetUserOrders, apiCancelOrder } from '../../services/potlucky';
+import Reviews from './Reviews';
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -28,154 +27,65 @@ const OrderHistory = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showReview, setShowReview] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Mock data - replace with actual API call
-  const mockOrders = [
-    {
-      id: 'ORD-001',
-      orderNumber: 'PL2025001',
-      date: '2025-01-15T10:30:00',
-      status: 'delivered',
-      meal: {
-        name: 'Jollof Rice with Grilled Chicken',
-        chef: 'Mama Akosua',
-        chefRating: 4.9,
-        image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop'
-      },
-      quantity: 2,
-      totalAmount: 25.99,
-      deliveryFee: 3.50,
-      finalAmount: 29.49,
-      deliveryAddress: '123 Main St, East Legon, Accra',
-      estimatedDelivery: '2025-01-15T12:00:00',
-      actualDelivery: '2025-01-15T11:45:00',
-      specialInstructions: 'Extra spicy please, no onions',
-      paymentMethod: 'Mobile Money',
-      reviewed: true,
-      userRating: 5,
-      userReview: 'Absolutely delicious! The chicken was perfectly grilled and the jollof had amazing flavor.',
-      canReorder: true,
-      canReview: false
-    },
-    {
-      id: 'ORD-002',
-      orderNumber: 'PL2025002',
-      date: '2025-01-14T14:20:00',
-      status: 'delivered',
-      meal: {
-        name: 'Waakye with Fish',
-        chef: 'Chef Kwame',
-        chefRating: 4.7,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop'
-      },
-      quantity: 1,
-      totalAmount: 18.50,
-      deliveryFee: 2.50,
-      finalAmount: 21.00,
-      deliveryAddress: '456 Oak Ave, Tema, Accra',
-      estimatedDelivery: '2025-01-14T16:00:00',
-      actualDelivery: '2025-01-14T15:50:00',
-      specialInstructions: '',
-      paymentMethod: 'Card',
-      reviewed: false,
-      userRating: null,
-      userReview: null,
-      canReorder: true,
-      canReview: true
-    },
-    {
-      id: 'ORD-003',
-      orderNumber: 'PL2025003',
-      date: '2025-01-13T19:15:00',
-      status: 'cancelled',
-      meal: {
-        name: 'Banku with Tilapia',
-        chef: 'Auntie Ama',
-        chefRating: 4.8,
-        image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&h=300&fit=crop'
-      },
-      quantity: 2,
-      totalAmount: 42.75,
-      deliveryFee: 4.00,
-      finalAmount: 46.75,
-      deliveryAddress: '789 Pine Rd, Kumasi',
-      estimatedDelivery: '2025-01-13T21:00:00',
-      actualDelivery: null,
-      specialInstructions: 'Please include extra pepper sauce',
-      paymentMethod: 'Mobile Money',
-      reviewed: false,
-      userRating: null,
-      userReview: null,
-      canReorder: true,
-      canReview: false,
-      cancellationReason: 'Chef unavailable due to emergency'
-    },
-    {
-      id: 'ORD-004',
-      orderNumber: 'PL2025004',
-      date: '2025-01-12T12:45:00',
-      status: 'delivered',
-      meal: {
-        name: 'Red Red with Fried Plantain',
-        chef: 'Sister Efua',
-        chefRating: 4.6,
-        image: 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop'
-      },
-      quantity: 1,
-      totalAmount: 15.99,
-      deliveryFee: 2.00,
-      finalAmount: 17.99,
-      deliveryAddress: '321 Cedar St, Accra',
-      estimatedDelivery: '2025-01-12T14:15:00',
-      actualDelivery: '2025-01-12T14:05:00',
-      specialInstructions: '',
-      paymentMethod: 'Mobile Money',
-      reviewed: true,
-      userRating: 4,
-      userReview: 'Good food but could use more seasoning.',
-      canReorder: true,
-      canReview: false
-    },
-    {
-      id: 'ORD-005',
-      orderNumber: 'PL2025005',
-      date: '2025-01-11T16:30:00',
-      status: 'preparing',
-      meal: {
-        name: 'Fufu with Light Soup',
-        chef: 'Chef Adjoa',
-        chefRating: 4.8,
-        image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop'
-      },
-      quantity: 1,
-      totalAmount: 28.50,
-      deliveryFee: 3.00,
-      finalAmount: 31.50,
-      deliveryAddress: '654 Birch Ln, East Legon, Accra',
-      estimatedDelivery: '2025-01-11T18:30:00',
-      actualDelivery: null,
-      specialInstructions: 'Please make it extra spicy',
-      paymentMethod: 'Card',
-      reviewed: false,
-      userRating: null,
-      userReview: null,
-      canReorder: false,
-      canReview: false
-    }
-  ];
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setOrders(mockOrders);
-      setFilteredOrders(mockOrders);
-      setLoading(false);
-    }, 1000);
+    fetchOrders();
   }, []);
 
   useEffect(() => {
     filterOrders();
   }, [searchTerm, activeFilter, orders]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await apiGetUserOrders();
+      
+      // Transform API response to match component expectations
+      const transformedOrders = response.orders?.map(transformOrderData) || [];
+      setOrders(transformedOrders);
+      setFilteredOrders(transformedOrders);
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+      setError('Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const transformOrderData = (apiOrder) => {
+    return {
+      id: apiOrder._id || apiOrder.id,
+      orderNumber: `PL${apiOrder._id?.slice(-6).toUpperCase() || 'UNKNOWN'}`,
+      date: apiOrder.createdAt,
+      status: apiOrder.status.toLowerCase(),
+      meal: {
+        id: apiOrder.meal._id || apiOrder.meal.id,
+        name: apiOrder.meal.mealName || apiOrder.meal.name,
+        chef: apiOrder.meal.createdBy ? 
+          `${apiOrder.meal.createdBy.firstName} ${apiOrder.meal.createdBy.lastName}` : 
+          'Unknown Chef',
+        chefRating: 4.5, // Default since not provided in API
+        image: apiOrder.meal.photos?.[0] || 'https://via.placeholder.com/400x300'
+      },
+      quantity: apiOrder.quantity,
+      totalAmount: apiOrder.totalPrice,
+      deliveryFee: 0, // Not provided in API
+      finalAmount: apiOrder.totalPrice,
+      deliveryAddress: 'Pickup at chef location', // Since it's pickup-based
+      estimatedDelivery: apiOrder.pickupTime,
+      actualDelivery: apiOrder.status === 'delivered' ? apiOrder.updatedAt : null,
+      specialInstructions: apiOrder.notes || '',
+      paymentMethod: 'Mobile Money', // Default since not provided
+      reviewed: false, // Would need separate API call to check
+      userRating: null,
+      userReview: null,
+      canReorder: apiOrder.status === 'delivered',
+      canReview: apiOrder.status === 'delivered',
+      fullOrderData: apiOrder
+    };
+  };
 
   const filterOrders = () => {
     let filtered = orders;
@@ -251,28 +161,30 @@ const OrderHistory = () => {
   };
 
   const handleReorder = (order) => {
-    // Implement reorder functionality
-    console.log('Reordering:', order);
-    // This would typically add the meal back to cart or redirect to meal page
+    // Navigate to meal page for reordering
+    window.location.href = `/dashboard/potlucky/browse/${order.meal.id}`;
+  };
+
+  const handleCancelOrder = async (orderId, reason = 'User requested cancellation') => {
+    try {
+      await apiCancelOrder(orderId, reason);
+      // Refresh orders after cancellation
+      await fetchOrders();
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      // Add error notification
+    }
   };
 
   const handleReview = (orderId) => {
     setShowReview(orderId);
   };
 
-  const submitReview = (orderId, rating, review) => {
-    setOrders(orders.map(order => 
-      order.id === orderId 
-        ? { ...order, reviewed: true, userRating: rating, userReview: review, canReview: false }
-        : order
-    ));
-    setShowReview(null);
-  };
-
-  const filterOptions = [
+  const getFilterOptions = () => [
     { value: 'all', label: 'All Orders', count: orders.length },
     { value: 'delivered', label: 'Delivered', count: orders.filter(o => o.status === 'delivered').length },
     { value: 'preparing', label: 'Preparing', count: orders.filter(o => o.status === 'preparing').length },
+    { value: 'pending', label: 'Pending', count: orders.filter(o => o.status === 'pending').length },
     { value: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length }
   ];
 
@@ -283,6 +195,24 @@ const OrderHistory = () => {
       </div>
     );
   }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading orders</h3>
+        <p className="text-gray-500 mb-4">{error}</p>
+        <button
+          onClick={fetchOrders}
+          className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  const filterOptions = getFilterOptions();
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
@@ -366,6 +296,9 @@ const OrderHistory = () => {
                     src={order.meal.image}
                     alt={order.meal.name}
                     className="w-16 h-16 rounded-lg object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/64x64?text=No+Image';
+                    }}
                   />
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{order.meal.name}</h4>
@@ -385,7 +318,7 @@ const OrderHistory = () => {
                   </div>
                 </div>
 
-                {/* Delivery Info */}
+                {/* Pickup Info */}
                 <div className="bg-gray-50 rounded-lg p-3 mb-4">
                   <div className="flex items-start space-x-2 mb-2">
                     <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
@@ -396,17 +329,17 @@ const OrderHistory = () => {
                       <Clock className="w-4 h-4" />
                       <span>
                         {order.status === 'delivered' ? 
-                          `Delivered at ${formatTime(order.actualDelivery)}` :
-                          `Expected by ${formatTime(order.estimatedDelivery)}`
+                          `Picked up at ${formatTime(order.actualDelivery)}` :
+                          `Pickup by ${formatTime(order.estimatedDelivery)}`
                         }
                       </span>
                     </div>
                     {order.status === 'delivered' && order.actualDelivery && (
                       <div className="flex items-center space-x-1">
-                        <Truck className="w-4 h-4" />
+                        <Package className="w-4 h-4" />
                         <span>
                           {new Date(order.actualDelivery) <= new Date(order.estimatedDelivery) ? 
-                            'On time' : 'Late delivery'
+                            'On time' : 'Late pickup'
                           }
                         </span>
                       </div>
@@ -419,15 +352,6 @@ const OrderHistory = () => {
                   <div className="mb-4">
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">Special Instructions:</span> {order.specialInstructions}
-                    </p>
-                  </div>
-                )}
-
-                {/* Cancellation Reason */}
-                {order.status === 'cancelled' && order.cancellationReason && (
-                  <div className="mb-4 p-3 bg-red-50 rounded-lg">
-                    <p className="text-sm text-red-700">
-                      <span className="font-medium">Cancellation Reason:</span> {order.cancellationReason}
                     </p>
                   </div>
                 )}
@@ -455,13 +379,15 @@ const OrderHistory = () => {
                 {/* Order Summary */}
                 <div className="border-t pt-3 mb-4">
                   <div className="flex justify-between text-sm text-gray-600 mb-1">
-                    <span>Subtotal</span>
+                    <span>Subtotal ({order.quantity}x)</span>
                     <span>¢{order.totalAmount}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600 mb-1">
-                    <span>Delivery Fee</span>
-                    <span>¢{order.deliveryFee}</span>
-                  </div>
+                  {order.deliveryFee > 0 && (
+                    <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <span>Delivery Fee</span>
+                      <span>¢{order.deliveryFee}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm font-medium text-gray-900">
                     <span>Total</span>
                     <span>¢{order.finalAmount}</span>
@@ -479,7 +405,7 @@ const OrderHistory = () => {
                       <span>Reorder</span>
                     </button>
                   )}
-                  {order.canReview && (
+                  {order.canReview && !order.reviewed && (
                     <button
                       onClick={() => handleReview(order.id)}
                       className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
@@ -488,12 +414,12 @@ const OrderHistory = () => {
                       <span>Review</span>
                     </button>
                   )}
-                  {order.status === 'preparing' && (
+                  {(order.status === 'pending' || order.status === 'preparing') && (
                     <button
-                      onClick={() => setSelectedOrder(order)}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
                     >
-                      Track Order
+                      Cancel Order
                     </button>
                   )}
                 </div>
@@ -508,7 +434,15 @@ const OrderHistory = () => {
         <ReviewModal
           order={orders.find(o => o.id === showReview)}
           onClose={() => setShowReview(null)}
-          onSubmit={submitReview}
+          onSubmit={async (orderId, rating, review) => {
+            // Update the order in state to reflect the review
+            setOrders(orders.map(order => 
+              order.id === orderId 
+                ? { ...order, reviewed: true, userRating: rating, userReview: review, canReview: false }
+                : order
+            ));
+            setShowReview(null);
+          }}
         />
       )}
     </div>
@@ -519,10 +453,20 @@ const OrderHistory = () => {
 const ReviewModal = ({ order, onClose, onSubmit }) => {
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (rating && review.trim()) {
-      onSubmit(order.id, rating, review);
+      setLoading(true);
+      try {
+        // Here you would typically call an API to submit the review
+        // For now, we'll just call the parent's onSubmit
+        await onSubmit(order.id, rating, review);
+      } catch (error) {
+        console.error('Failed to submit review:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -544,6 +488,9 @@ const ReviewModal = ({ order, onClose, onSubmit }) => {
             src={order.meal.image}
             alt={order.meal.name}
             className="w-full h-32 object-cover rounded-lg mb-3"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/300x120?text=No+Image';
+            }}
           />
           <h4 className="font-medium">{order.meal.name}</h4>
           <p className="text-sm text-gray-600">by {order.meal.chef}</p>
@@ -558,13 +505,14 @@ const ReviewModal = ({ order, onClose, onSubmit }) => {
               <button
                 key={i}
                 onClick={() => setRating(i + 1)}
-                className={`w-8 h-8 ${
-                  i < rating ? 'text-yellow-400' : 'text-gray-300'
+                className={`w-8 h-8 transition-colors ${
+                  i < rating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'
                 }`}
               >
                 <Star className="w-full h-full fill-current" />
               </button>
             ))}
+            <span className="ml-2 text-sm text-gray-600">({rating} star{rating !== 1 ? 's' : ''})</span>
           </div>
         </div>
 
@@ -589,10 +537,10 @@ const ReviewModal = ({ order, onClose, onSubmit }) => {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!rating || !review.trim()}
+            disabled={!rating || !review.trim() || loading}
             className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Submit Review
+            {loading ? 'Submitting...' : 'Submit Review'}
           </button>
         </div>
       </div>

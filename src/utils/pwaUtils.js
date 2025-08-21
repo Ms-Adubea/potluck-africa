@@ -1,10 +1,22 @@
-// utils/pwaUtils.js - PWA helper functions
+// 📁 src/utils/pwaUtils.js - Updated PWA utils with notification integration
 export const registerServiceWorker = () => {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
           console.log('SW registered: ', registration);
+          
+          // Listen for push events
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'PUSH_RECEIVED') {
+              // Handle push notification received
+              console.log('Push notification received:', event.data);
+              
+              // You can trigger a notification count refresh here
+              const refreshEvent = new CustomEvent('refreshNotifications');
+              window.dispatchEvent(refreshEvent);
+            }
+          });
         })
         .catch((registrationError) => {
           console.log('SW registration failed: ', registrationError);
@@ -16,11 +28,18 @@ export const registerServiceWorker = () => {
 export const requestNotificationPermission = async () => {
   if ('Notification' in window) {
     const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    if (permission === 'granted') {
+      console.log('Notification permission granted');
+      return true;
+    } else {
+      console.log('Notification permission denied');
+      return false;
+    }
   }
   return false;
 };
 
+// Updated subscribe function to work with your API
 export const subscribeUserToPush = async () => {
   if ('serviceWorker' in navigator && 'PushManager' in window) {
     try {
@@ -30,14 +49,9 @@ export const subscribeUserToPush = async () => {
         applicationServerKey: process.env.REACT_APP_VAPID_PUBLIC_KEY
       });
       
-      // Send subscription to your server
-      await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(subscription),
-      });
+      // Use your API function instead of direct fetch
+      const { apiSubscribeToNotifications } = await import('../services/notifications');
+      await apiSubscribeToNotifications(subscription);
       
       return subscription;
     } catch (error) {

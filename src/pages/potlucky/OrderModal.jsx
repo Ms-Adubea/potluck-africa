@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Calendar, 
@@ -8,7 +8,10 @@ import {
   Minus, 
   ShoppingCart,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  CreditCard,
+  Smartphone,
+  Banknote
 } from 'lucide-react';
 import { apiCreateOrder } from '../../services/potlucky';
 
@@ -16,41 +19,66 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
   const [quantity, setQuantity] = useState(1);
   const [pickupTime, setPickupTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [timeSlots, setTimeSlots] = useState([]);
 
-  // Generate time slots for pickup
-  const generateTimeSlots = () => {
-    const slots = [];
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0); // Start from 9 AM tomorrow
+  // Payment method options
+  const paymentMethods = [
+    { value: 'card', label: 'Credit/Debit Card', icon: CreditCard },
+    { value: 'mobile_money', label: 'Mobile Money', icon: Smartphone },
+    { value: 'cash', label: 'Cash on Pickup', icon: Banknote },
+  ];
 
-    for (let i = 0; i < 12; i++) { // 12 slots (9 AM to 9 PM)
-      const time = new Date(tomorrow.getTime() + (i * 60 * 60 * 1000)); // Add 1 hour per slot
-      slots.push({
-        value: time.toISOString(),
-        label: time.toLocaleString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        })
-      });
+// Generate time slots for pickup - within next 60 minutes
+  useEffect(() => {
+    if (isOpen) {
+      const generateTimeSlots = () => {
+        const slots = [];
+        const now = new Date();
+        const startTime = new Date(now.getTime() + 30 * 60000); // Start from 30 minutes from now
+        
+        // Round up to the next 15-minute interval
+        const minutesToAdd = (15 - (startTime.getMinutes() % 15)) % 15;
+        startTime.setMinutes(startTime.getMinutes() + minutesToAdd);
+        startTime.setSeconds(0, 0);
+        
+        // Generate slots for the next 3 hours (12 slots of 15 minutes each)
+        for (let i = 0; i < 12; i++) {
+          const time = new Date(startTime.getTime() + (i * 15 * 60000));
+          // Don't generate slots beyond 60 minutes from now
+          if (time.getTime() - now.getTime() > 60 * 60000) break;
+          
+          slots.push({
+            value: time.toISOString(),
+            label: time.toLocaleString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            })
+          });
+        }
+        return slots;
+      };
+
+      setTimeSlots(generateTimeSlots());
+      // Auto-select the first available time slot
+      const slots = generateTimeSlots();
+      if (slots.length > 0 && !pickupTime) {
+        setPickupTime(slots[0].value);
+      }
     }
-    return slots;
-  };
+  }, [isOpen]);
 
-  const timeSlots = generateTimeSlots();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!pickupTime) {
       setError('Please select a pickup time');
+      return;
+    }
+
+    if (!paymentMethod) {
+      setError('Please select a payment method');
       return;
     }
 
@@ -62,6 +90,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         meal: meal.id,
         quantity,
         pickupTime,
+        paymentMethod,
         notes: notes.trim()
       };
 
@@ -73,6 +102,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
       // Reset form
       setQuantity(1);
       setPickupTime('');
+      setPaymentMethod('');
       setNotes('');
       
     } catch (error) {
@@ -135,7 +165,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             {/* Quantity Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -185,6 +215,51 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Pickup times start 60 minutes from now
+              </p>
+            </div>
+
+            {/* Payment Method */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Payment Method
+              </label>
+              <div className="space-y-3">
+                {paymentMethods.map((method) => {
+                  const IconComponent = method.icon;
+                  return (
+                    <label
+                      key={method.value}
+                      className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
+                        paymentMethod === method.value
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method.value}
+                        checked={paymentMethod === method.value}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="sr-only"
+                      />
+                      <IconComponent className={`w-5 h-5 mr-3 ${
+                        paymentMethod === method.value ? 'text-orange-600' : 'text-gray-400'
+                      }`} />
+                      <span className={`font-medium ${
+                        paymentMethod === method.value ? 'text-orange-900' : 'text-gray-700'
+                      }`}>
+                        {method.label}
+                      </span>
+                      {paymentMethod === method.value && (
+                        <CheckCircle className="w-5 h-5 text-orange-600 ml-auto" />
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Special Instructions */}
@@ -213,6 +288,14 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
                   <span className="text-gray-600">Estimated cooking time</span>
                   <span className="font-medium">{meal.cookingTime || meal.deliveryTime} mins</span>
                 </div>
+                {paymentMethod && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment method</span>
+                    <span className="font-medium">
+                      {paymentMethods.find(m => m.value === paymentMethod)?.label}
+                    </span>
+                  </div>
+                )}
                 <div className="border-t pt-2 flex justify-between">
                   <span className="font-semibold">Total</span>
                   <span className="font-bold text-lg">¢{totalPrice.toFixed(2)}</span>
@@ -222,10 +305,10 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
 
             {/* Submit Button */}
             <button
-              type="submit"
-              disabled={loading || !pickupTime}
+              onClick={handleSubmit}
+              disabled={loading || !pickupTime || !paymentMethod}
               className={`w-full flex items-center justify-center space-x-2 py-4 px-4 rounded-xl font-semibold text-lg transition-all ${
-                loading || !pickupTime
+                loading || !pickupTime || !paymentMethod
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95'
               }`}
@@ -242,7 +325,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
                 </>
               )}
             </button>
-          </form>
+          </div>
         </div>
       </div>
     </div>

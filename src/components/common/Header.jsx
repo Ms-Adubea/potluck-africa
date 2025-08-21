@@ -5,7 +5,8 @@ import { Bell, User, Settings, LogOut, ChevronDown } from "lucide-react";
 import navigationConfig from "../../constants/navigationConfig";
 import { Link, useNavigate } from "react-router-dom";
 import { clearAuthToken } from "../../services/config";
-import { clearUserData, apiGetProfile } from "../../services/auth"; // Import apiGetProfile
+import { clearUserData, apiGetProfile } from "../../services/auth";
+import NotificationBell from "./NotificationBell";
 
 // Header Component with Enhanced Profile Dropdown
 const Header = ({ currentRole }) => {
@@ -201,12 +202,7 @@ const Header = ({ currentRole }) => {
 
       <div className="flex space-x-4 items-center">
         {/* Notification Bell with Badge */}
-        <div className="relative">
-          <Bell className="w-5 h-5 text-gray-500 hover:text-gray-700 cursor-pointer transition-colors" />
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-            <span className="text-xs text-white font-bold">3</span>
-          </div>
-        </div>
+        <NotificationBell />
 
         {/* Enhanced Profile Button */}
         <button
@@ -279,7 +275,7 @@ const Header = ({ currentRole }) => {
                   </div>
                 </button>
 
-                {/* <button
+                <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     navigate(`/dashboard/${currentRole}/settings`);
@@ -293,7 +289,7 @@ const Header = ({ currentRole }) => {
                     <p className="font-medium text-gray-900">Settings</p>
                     <p className="text-xs text-gray-500">Preferences & privacy</p>
                   </div>
-                </button> */}
+                </button>
 
                 <div className="border-t border-gray-100 my-2"></div>
 

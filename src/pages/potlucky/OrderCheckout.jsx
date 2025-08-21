@@ -155,7 +155,7 @@ const OrderCheckout = () => {
       
       // Redirect to order tracking after a delay
       setTimeout(() => {
-        navigate('/dashboard/orders');
+        navigate('/dashboard/potlucky/orders');
       }, 3000);
       
     } catch (err) {
@@ -182,7 +182,7 @@ const OrderCheckout = () => {
           </p>
           <div className="space-y-2">
             <button
-              onClick={() => navigate('/dashboard/orders')}
+              onClick={() => navigate('/dashboard/potlucky/orders')}
               className="w-full bg-orange-600 text-white py-3 px-4 rounded-lg hover:bg-orange-700 transition-colors"
             >
               View Order Status

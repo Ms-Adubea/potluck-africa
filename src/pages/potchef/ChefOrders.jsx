@@ -10,7 +10,9 @@ import {
   Package,
 } from "lucide-react";
 import { apiGetChefOrders, apiUpdateOrderStatus } from "../../services/potchef";
-// import { apiGetChefOrders, apiUpdateOrderStatus } from "../services/potchef";
+import { useNotificationContext } from "../../contexts/NotificationContext";
+import { showBrowserNotification } from "../../utils/notificationUtils";
+
 
 const ChefOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -18,6 +20,7 @@ const ChefOrders = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const { fetchUnreadCount } = useNotificationContext
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -46,6 +49,19 @@ const ChefOrders = () => {
             : order
         )
       );
+
+ // Show browser notification for status updates
+      showBrowserNotification(
+        `Order ${newStatus}`,
+        {
+          body: `Order #${orderId.slice(-8)} has been marked as ${newStatus.toLowerCase()}`,
+          icon: '/icons/icon-192x192.png'
+        }
+      );
+
+// Refresh notification count in case there are related notifications
+      fetchUnreadCount();
+
     } catch (error) {
       console.error(`Error updating order ${orderId}:`, error);
       alert("Failed to update order status. Please try again.");

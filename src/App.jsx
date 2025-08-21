@@ -38,6 +38,9 @@ import AddFranchisee from "./pages/admin/AddFranchisee";
 import AddUsers from "./pages/admin/AddUsers";
 import FranchiseeManagement from "./pages/admin/FranchiseeManagement";
 import EditFranchiseeModal from "./pages/admin/EditFranchisee";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import NotificationsPage from "./components/common/NotificationPage";
+import NotificationTestPanel from "./components/common/NotificationTestPanel";
 
 function App() {
   useEffect(() => {
@@ -61,6 +64,10 @@ function App() {
     {
       path: "/login",
       element: <Login />,
+    },
+    {
+      path: "/not",
+      element: <NotificationTestPanel />,
     },
 
     {
@@ -147,6 +154,14 @@ function App() {
                 </ProtectedRoute>
               ),
             },
+            {
+              path: "notifications",
+              element: (
+                <ProtectedRoute requiredRole="potchef">
+                  <NotificationsPage />
+                </ProtectedRoute>
+              ),
+            },
           ],
         },
         // Potlucky routes
@@ -194,7 +209,7 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="potlucky">
                   <FavoritesProvider>
-                  <PotluckyFavorites />
+                    <PotluckyFavorites />
                   </FavoritesProvider>
                 </ProtectedRoute>
               ),
@@ -212,6 +227,14 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="potlucky">
                   <SettingsPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "notifications",
+              element: (
+                <ProtectedRoute requiredRole="potlucky">
+                  <NotificationsPage />
                 </ProtectedRoute>
               ),
             },
@@ -266,6 +289,14 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="franchisee">
                   <SettingsPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "notifications",
+              element: (
+                <ProtectedRoute requiredRole="franchisee">
+                  <NotificationsPage />
                 </ProtectedRoute>
               ),
             },
@@ -363,13 +394,25 @@ function App() {
                 </ProtectedRoute>
               ),
             },
+            {
+              path: "notifications",
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <NotificationsPage />
+                </ProtectedRoute>
+              ),
+            },
           ],
         },
       ],
     },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <NotificationProvider>
+      <RouterProvider router={router} />
+    </NotificationProvider>
+  );
 }
 
 export default App;

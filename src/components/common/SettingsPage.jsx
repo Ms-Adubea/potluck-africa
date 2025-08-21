@@ -13,6 +13,7 @@ import {
   Save,
   AlertTriangle
 } from 'lucide-react';
+import NotificationSettings from './NotificationSettings';
 
 const SettingsPage = ({ currentRole }) => {
   const [settings, setSettings] = useState({
@@ -318,10 +319,7 @@ const SettingsPage = ({ currentRole }) => {
 
       {/* Notifications */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Bell className="w-5 h-5 text-orange-500" />
-          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
-        </div>
+        <NotificationSettings />
         
         <div className="space-y-4">
           <div className="flex items-center justify-between">

@@ -41,6 +41,7 @@ import EditFranchiseeModal from "./pages/admin/EditFranchisee";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import NotificationsPage from "./components/common/NotificationPage";
 import NotificationTestPanel from "./components/common/NotificationTestPanel";
+import NotificationManager from "./pages/admin/NotificationManager";
 
 function App() {
   useEffect(() => {
@@ -399,6 +400,14 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="admin">
                   <NotificationsPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "notifications-manager",
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <NotificationManager />
                 </ProtectedRoute>
               ),
             },

@@ -1,4 +1,4 @@
-// 📁 src/components/common/NotificationBell.jsx - Bell notification component
+// 📁 src/components/common/NotificationBell.jsx - Bell notification component with mobile-centered dropdown
 import React, { useState } from "react";
 import { Bell, X, Check, CheckCheck, Trash2, Settings } from "lucide-react";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -87,7 +87,7 @@ const NotificationBell = () => {
         )}
       </button>
 
-      {/* Notification Dropdown */}
+      {/* Notification Dropdown - Responsive positioning */}
       {isOpen && (
         <>
           <div
@@ -95,7 +95,12 @@ const NotificationBell = () => {
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl border border-gray-100 z-20 max-h-[32rem] overflow-hidden">
+          <div className="absolute top-12 z-20 max-h-[32rem] overflow-hidden
+                        /* Mobile: centered and full-width with margins */
+                        left-1/2 transform -translate-x-1/2 w-[calc(100vw-2rem)] max-w-sm
+                        /* Tablet and up: positioned to the right */
+                        sm:left-auto sm:right-0 sm:transform-none sm:translate-x-0 sm:w-96 sm:max-w-none
+                        bg-white rounded-xl shadow-2xl border border-gray-100">
             {/* Header */}
             <div className="p-4 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between">

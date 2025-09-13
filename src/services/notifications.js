@@ -1,6 +1,6 @@
 import { apiClient } from './config';
 
-// FOR SYSTEM PUSH POP UP
+// FOR SYSTEM PUSH NOTIFICATIONS
 export const apiSubscribeToNotifications = async (subscription) => {
   const response = await apiClient.post('/subscribe', subscription);
   return response.data;

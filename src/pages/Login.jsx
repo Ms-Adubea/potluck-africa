@@ -44,61 +44,73 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ // Modified handleSubmit function in Login.jsx
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+  
+  setIsLoading(true);
+  
+  try {
+    const credentials = {
+      email: formData.email,
+      password: formData.password
+    };
     
-    if (!validateForm()) return;
+    const response = await apiLogin(credentials);
+    console.log('API Response:', response);
     
-    setIsLoading(true);
+    // Handle different possible token property names
+    const token = response.accessToken || response.token || response.access_token;
     
-    try {
-      const credentials = {
-        email: formData.email,
-        password: formData.password
-      };
-      
-      const response = await apiLogin(credentials);
-      console.log('API Response:', response);
-      
-      // Handle different possible token property names
-      const token = response.accessToken || response.token || response.access_token;
-      
-      if (!token) {
-        throw new Error('No access token received from server');
-      }
-      
-      // Set auth token using helper function
-      setAuthToken(token);
-      
-      // Store user data including profile picture
-      await storeUserData(response);
-      
-      // Debug logs
-      console.log('Token stored:', localStorage.getItem('token'));
-      console.log('User role:', response.role);
-      console.log('User name:', response.name);
-      console.log('Profile picture stored:', localStorage.getItem('userProfilePicture') || localStorage.getItem('userProfilePicUrl'));
-      
-      // Get the correct route based on user role
-      const roleRoute = getRoleRoute(response.role);
-      console.log('Navigating to:', `/dashboard/${roleRoute}`);
-      
-      // Redirect to role-specific dashboard
-      navigate(`/dashboard/${roleRoute}`, { replace: true });
-      
-    } catch (error) {
-      console.error('Login error:', error);
-      
-      // Clear any partial auth data
-      clearUserData();
-      
-      setErrors({ 
-        general: error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.' 
-      });
-    } finally {
-      setIsLoading(false);
+    if (!token) {
+      throw new Error('No access token received from server');
     }
-  };
+    
+    // Set auth token using helper function
+    setAuthToken(token);
+    
+    // Store user data including profile picture
+    await storeUserData(response);
+    
+    // Debug logs
+    console.log('Token stored:', localStorage.getItem('token'));
+    console.log('User role:', response.role);
+    console.log('User name:', response.name);
+    console.log('Profile picture stored:', localStorage.getItem('userProfilePicture') || localStorage.getItem('userProfilePicUrl'));
+    
+    // Get the correct route based on user role
+    const roleRoute = getRoleRoute(response.role);
+    console.log('User role route:', roleRoute);
+    
+    // Special redirect logic for potlucky users
+    let redirectPath;
+    if (response.role === 'potlucky') {
+      redirectPath = `/dashboard/potlucky/browse`;
+      console.log('Potlucky user detected, redirecting to browse page');
+    } else {
+      redirectPath = `/dashboard/${roleRoute}`;
+    }
+    
+    console.log('Navigating to:', redirectPath);
+    
+    // Redirect to appropriate page
+    navigate(redirectPath, { replace: true });
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    
+    // Clear any partial auth data
+    clearUserData();
+    
+    setErrors({ 
+      general: error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.' 
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));

@@ -1,5 +1,5 @@
-// 📁 src/App.jsx
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+// 📁 src/App.jsx - Modified to redirect potlucky index to browse
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import HomePage from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -42,6 +42,7 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 import NotificationsPage from "./components/common/NotificationPage";
 import NotificationTestPanel from "./components/common/NotificationTestPanel";
 import NotificationManager from "./pages/admin/NotificationManager";
+import Eateries from "./pages/potlucky/Eateries";
 
 function App() {
   useEffect(() => {
@@ -165,7 +166,7 @@ function App() {
             },
           ],
         },
-        // Potlucky routes
+        // Potlucky routes - Modified to redirect index to browse
         {
           path: "potlucky",
           children: [
@@ -173,7 +174,7 @@ function App() {
               index: true,
               element: (
                 <ProtectedRoute requiredRole="potlucky">
-                  <PotluckyDashboard />
+                  <Navigate to="/dashboard/potlucky/browse" replace />
                 </ProtectedRoute>
               ),
             },
@@ -194,6 +195,14 @@ function App() {
               element: (
                 <ProtectedRoute requiredRole="potlucky">
                   <PotluckyMealView />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "eateries",
+              element: (
+                <ProtectedRoute requiredRole="potlucky">
+                  <Eateries />
                 </ProtectedRoute>
               ),
             },

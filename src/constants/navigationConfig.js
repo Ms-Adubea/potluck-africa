@@ -18,8 +18,9 @@ const navigationConfig = {
     title: 'Food Lover Dashboard',
     avatar: '🍽️',
     navigation: [
-      { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
+      // { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
       { id: 'browse', label: 'Browse', icon: 'Search' },
+      { id: 'eateries', label: 'Eateries', icon: 'Home' },
       { id: 'orders', label: 'Orders', icon: 'ShoppingCart' },
       { id: 'favorites', label: 'Favorites', icon: 'Heart' }
     ]

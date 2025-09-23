@@ -8,7 +8,6 @@ import {
   Calendar, MapPin, Activity,
   Menu, X
 } from 'lucide-react';
-// import { apiGetAllUsers, apiDeleteUser, apiGetUser } from './api';
 import UserDetailView from './UserDetailView';
 import { apiDeleteUser, apiGetAllUsers, apiGetUserById } from '../../services/admin';
 import { Link } from 'react-router-dom';
@@ -133,10 +132,43 @@ const AdminUserManagement = () => {
     }
   };
 
+  const getRoleDisplayName = (role) => {
+    switch(role?.toLowerCase()) {
+      case 'admin': return 'Admins';
+      case 'potchef': return 'Potchefs';
+      case 'franchisee': return 'Franchisees';
+      case 'potlucky': return 'Potluckies';
+      default: return 'Users';
+    }
+  };
+
   const getInitials = (firstName, lastName) => {
     const first = firstName?.charAt(0)?.toUpperCase() || '';
     const last = lastName?.charAt(0)?.toUpperCase() || '';
     return first + last || '??';
+  };
+
+  // Process role counts to handle different data structures
+  const processRoleCounts = (roleCounts) => {
+    if (!roleCounts) return [];
+    
+    // Handle array format [{_id: 'admin', count: 5}, {_id: 'potchef', count: 10}]
+    if (Array.isArray(roleCounts)) {
+      return roleCounts.map(item => ({
+        role: item._id || item.role,
+        count: item.count || 0
+      }));
+    }
+    
+    // Handle object format {admin: 5, potchef: 10}
+    if (typeof roleCounts === 'object') {
+      return Object.entries(roleCounts).map(([role, count]) => ({
+        role,
+        count: typeof count === 'object' ? count.count || 0 : count
+      }));
+    }
+    
+    return [];
   };
 
   const safeUsers = Array.isArray(users) ? users : [];
@@ -169,6 +201,8 @@ const AdminUserManagement = () => {
       />
     );
   }
+
+  const processedRoleCounts = processRoleCounts(stats.roleCounts);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -205,7 +239,7 @@ const AdminUserManagement = () => {
                 </button>
               </Link>
               <Link to="/dashboard/admin/add-user">
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm">
                   <Plus className="w-4 h-4" />
                   <span className="hidden md:inline">Add User</span>
                   <span className="md:hidden">User</span>
@@ -229,7 +263,7 @@ const AdminUserManagement = () => {
                 </Link>
                 <Link to="/dashboard/admin/add-user" className="block">
                   <button 
-                    className="w-full flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm"
+                    className="w-full flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     <Plus className="w-4 h-4" />
@@ -241,13 +275,27 @@ const AdminUserManagement = () => {
           )}
 
           {/* Stats Cards */}
-          {stats.roleCounts && (
+          {processedRoleCounts.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-              {Object.entries(stats.roleCounts).map(([role, count]) => (
-                <div key={role} className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
+              {/* Total Users Card */}
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 border border-blue-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-base sm:text-lg">👥</span>
+                  <span className="text-xs sm:text-sm font-medium text-blue-700 truncate">Total Users</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-blue-900">
+                  {stats.totalUsers || safeUsers.length}
+                </p>
+              </div>
+
+              {/* Role-specific Cards */}
+              {processedRoleCounts.map(({ role, count }) => (
+                <div key={role} className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl p-3 sm:p-4 border border-slate-200 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-base sm:text-lg">{getRoleIcon(role)}</span>
-                    <span className="text-xs sm:text-sm font-medium text-slate-600 capitalize truncate">{role}s</span>
+                    <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">
+                      {getRoleDisplayName(role)}
+                    </span>
                   </div>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900">{count}</p>
                 </div>
@@ -261,11 +309,19 @@ const AdminUserManagement = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search users..."
+                placeholder="Search users by name, email, or role..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm sm:text-base"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm sm:text-base placeholder-slate-400"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             <button
@@ -290,15 +346,33 @@ const AdminUserManagement = () => {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+              <div>
+                <p className="text-sm text-red-700 font-medium">Error Loading Users</p>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* Search Results Header */}
+        {searchTerm && (
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-slate-600">
+              Found <span className="font-semibold">{filteredUsers.length}</span> user{filteredUsers.length !== 1 ? 's' : ''} matching "{searchTerm}"
+            </p>
+            <button
+              onClick={() => setSearchTerm('')}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Clear search
+            </button>
           </div>
         )}
 
         {/* Users Grid */}
         <div className="grid gap-3 sm:gap-4">
           {filteredUsers.map((user) => (
-            <div key={user.id || user._id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
+            <div key={user.id || user._id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-200 hover:border-blue-200">
               <div className="p-4 sm:p-6">
                 <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                   {/* Profile Picture */}
@@ -344,7 +418,7 @@ const AdminUserManagement = () => {
                       </div>
                       <div className={`flex items-center gap-1 ${user.profileCompleted ? 'text-green-600' : 'text-amber-600'}`}>
                         {user.profileCompleted ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                        <span className="font-medium">{user.profileCompleted ? 'Complete' : 'Incomplete'}</span>
+                        <span className="font-medium">{user.profileCompleted ? 'Profile Complete' : 'Profile Incomplete'}</span>
                       </div>
                       <div className="flex items-center gap-1 text-slate-500">
                         <Calendar className="w-3 h-3" />
@@ -397,11 +471,20 @@ const AdminUserManagement = () => {
                 ? 'Try adjusting your search terms or clear the search to see all users.' 
                 : 'When users join your platform, they will appear here.'}
             </p>
-            {!searchTerm && (
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4 inline mr-2" />
-                Add First User
+            {searchTerm ? (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Clear Search
               </button>
+            ) : (
+              <Link to="/dashboard/admin/add-user">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  <Plus className="w-4 h-4 inline mr-2" />
+                  Add First User
+                </button>
+              </Link>
             )}
           </div>
         )}
@@ -422,7 +505,7 @@ const AdminUserManagement = () => {
             </div>
             
             <p className="text-slate-700 mb-6 text-sm sm:text-base">
-              Are you sure you want to delete this user? All associated data will be permanently removed.
+              Are you sure you want to delete this user? All associated data will be permanently removed from the system.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-3">
@@ -435,9 +518,16 @@ const AdminUserManagement = () => {
               <button
                 onClick={() => handleDeleteUser(deleteConfirm)}
                 disabled={deleteLoading === deleteConfirm}
-                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
-                {deleteLoading === deleteConfirm ? 'Deleting...' : 'Delete User'}
+                {deleteLoading === deleteConfirm ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete User'
+                )}
               </button>
             </div>
           </div>

@@ -1,27 +1,3 @@
-// import { apiClient } from './config';
-
-// // === PAYMENT FUNCTIONS ===
-// export const apiCreatePayment = async (paymentData) => {
-//   try {
-//     const response = await apiClient.post('/create-payment', paymentData);
-//     return response.data;
-//   } catch (error) {
-//     console.error('Create payment failed:', error);
-//     throw error;
-//   }
-// };
-
-// export const apiVerifyPayment = async (reference) => {
-//   try {
-//     // Fixed the endpoint to accept reference as parameter
-//     const response = await apiClient.get(`/verify-payment/${reference}`);
-//     return response.data;
-//   } catch (error) {
-//     console.error('Payment verification failed:', error);
-//     throw error;
-//   }
-// };
-
 import { apiClient } from './config';
 
 // === PAYMENT FUNCTIONS ===
@@ -29,51 +5,90 @@ export const apiCreatePayment = async (paymentData) => {
   try {
     console.log('Sending payment data to backend:', paymentData);
     
-    // Validate required fields before sending
+    // Validate required fields
     if (!paymentData.orderId) {
+      console.error('Missing orderId in payment data:', paymentData);
       throw new Error('Order ID is required for payment processing');
     }
-    if (!paymentData.amount) {
-      throw new Error('Amount is required for payment processing');
-    }
-    if (!paymentData.paymentMethod) {
+    if (!paymentData.method) {
+      console.error('Missing method in payment data:', paymentData);
       throw new Error('Payment method is required');
     }
     
-    // Email is only required for non-cash payments
-    if (paymentData.paymentMethod !== 'cash' && !paymentData.email) {
-      throw new Error('Email is required for online payment processing');
+    // Prepare payload according to your API documentation
+    const payload = {
+      orderId: paymentData.orderId,
+      method: paymentData.method
+    };
+
+    // Add mobile money details for momo payments
+    if (paymentData.method === 'momo' && paymentData.momo) {
+      if (!paymentData.momo.phone || !paymentData.momo.provider) {
+        throw new Error('Mobile money phone and provider are required');
+      }
+      payload.momo = {
+        phone: paymentData.momo.phone,
+        provider: paymentData.momo.provider
+      };
     }
     
-    // Mobile money validation
-    if (paymentData.paymentMethod === 'momo') {
-      if (!paymentData.momo?.phone) {
-        throw new Error('Mobile money phone number is required');
-      }
-      if (!paymentData.momo?.provider) {
-        throw new Error('Mobile money provider is required');
-      }
-    }
-    
-    const response = await apiClient.post('/create-payment', paymentData);
+    console.log('Final payment payload:', payload);
+    const response = await apiClient.post('/api/payments/create-payment', payload);
     console.log('Payment response from backend:', response.data);
+    
     return response.data;
   } catch (error) {
     console.error('Create payment failed:', error);
-    console.error('Error response:', error.response?.data);
+    console.error('Error response data:', error.response?.data);
+    console.error('Error response status:', error.response?.status);
+    console.error('Error response headers:', error.response?.headers);
     
-    // Return a more user-friendly error message
-    const errorMessage = error.response?.data?.error || error.message || 'Payment initialization failed';
+    // Extract more detailed error information
+    let errorMessage = 'Payment initialization failed';
+    
+    if (error.response?.data) {
+      // Handle different error response formats
+      if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data;
+      } else if (error.response.data.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response.data.details) {
+        errorMessage = error.response.data.details;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     throw new Error(errorMessage);
   }
 };
 
 export const apiVerifyPayment = async (reference) => {
   try {
-    const response = await apiClient.get(`/verify-payment/${reference}`);
+    const response = await apiClient.get(`/api/payments/verify-payment/${reference}`);
     return response.data;
   } catch (error) {
     console.error('Payment verification failed:', error);
     throw error;
   }
+};
+
+// Helper function to open payment URL
+export const openPaymentWindow = (authorizationUrl, options = {}) => {
+  const defaultOptions = {
+    width: 600,
+    height: 600,
+    scrollbars: 'yes',
+    resizable: 'yes',
+    status: 'yes'
+  };
+  
+  const windowOptions = { ...defaultOptions, ...options };
+  const windowFeatures = Object.entries(windowOptions)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(',');
+    
+  return window.open(authorizationUrl, '_blank', windowFeatures);
 };

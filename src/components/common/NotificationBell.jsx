@@ -1,4 +1,4 @@
-// 📁 src/components/common/NotificationBell.jsx - Bell notification component with mobile-centered dropdown
+// 📁 src/components/common/NotificationBell.jsx - Fixed with higher z-index values
 import React, { useState } from "react";
 import { Bell, X, Check, CheckCheck, Trash2, Settings } from "lucide-react";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -87,15 +87,15 @@ const NotificationBell = () => {
         )}
       </button>
 
-      {/* Notification Dropdown - Responsive positioning */}
+      {/* Notification Dropdown - INCREASED Z-INDEX */}
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-50"
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="absolute top-12 z-20 max-h-[32rem] overflow-hidden
+          <div className="absolute top-12 z-[100] max-h-[32rem] overflow-hidden
                         /* Mobile: centered and full-width with margins */
                         left-1/2 transform -translate-x-1/2 w-[calc(100vw-2rem)] max-w-sm
                         /* Tablet and up: positioned to the right */

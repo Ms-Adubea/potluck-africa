@@ -42,8 +42,6 @@ export const apiAddFavorite = async (mealId) => {
 
 export const apiRemoveFavorite = async (mealId) => {
   try {
-    // Your backend uses PATCH for toggle, so this should also be PATCH
-    // Or you might need a different endpoint for explicit removal
     const response = await apiClient.patch(`/meals/${mealId}/favorite`);
     return response.data;
   } catch (error) {
@@ -268,7 +266,7 @@ export const apiGetMealById = async (mealId) => {
 export const apiCreateOrder = async (orderData) => {
   try {
     const response = await apiClient.post('/orders', orderData);
-    return response.data;
+    return response.data; // This should include both order and payment data
   } catch (error) {
     console.error("Create order failed:", error);
     throw error;

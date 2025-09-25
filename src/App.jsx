@@ -43,6 +43,7 @@ import NotificationsPage from "./components/common/NotificationPage";
 import NotificationTestPanel from "./components/common/NotificationTestPanel";
 import NotificationManager from "./pages/admin/NotificationManager";
 import Eateries from "./pages/potlucky/Eateries";
+import OrderTracking from "./pages/potlucky/OrderTracking";
 
 function App() {
   useEffect(() => {
@@ -70,6 +71,10 @@ function App() {
     {
       path: "/not",
       element: <NotificationTestPanel />,
+    },
+    {
+      path: "/track",
+      element: <OrderTracking />,
     },
 
     {

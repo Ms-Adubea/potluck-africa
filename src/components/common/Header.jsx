@@ -1,4 +1,4 @@
-// 📁 src/components/common/Header.jsx - Fixed profile picture consistency
+// 📁 src/components/common/Header.jsx - Fixed with higher z-index values
 
 import React, { useState, useEffect } from "react";
 import { Bell, User, Settings, LogOut, ChevronDown } from "lucide-react";
@@ -190,7 +190,7 @@ const Header = ({ currentRole }) => {
   const roleInfo = getRoleDisplayInfo(currentRole);
 
   return (
-    <header className="bg-white shadow-sm border-b p-4 flex justify-between items-center relative">
+    <header className="bg-white shadow-sm border-b p-4 flex justify-between items-center relative z-40">
       <div className="flex items-center space-x-2">
         <span className="text-2xl">{config.avatar}</span>
         <Link to="/">
@@ -225,15 +225,15 @@ const Header = ({ currentRole }) => {
           />
         </button>
 
-        {/* Enhanced Profile Dropdown */}
+        {/* Enhanced Profile Dropdown - INCREASED Z-INDEX */}
         {isProfileOpen && (
           <>
             <div
-              className="fixed inset-0 z-10"
+              className="fixed inset-0 z-50"
               onClick={() => setIsProfileOpen(false)}
             />
             
-            <div className="absolute right-0 top-16 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-20 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 top-16 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-in slide-in-from-top-2 duration-200">
               {/* Profile Header */}
               <div className="relative bg-gradient-to-br from-orange-50 to-orange-100 p-6 border-b border-orange-200">
                 <div className="absolute top-0 right-0 w-20 h-20 opacity-10">

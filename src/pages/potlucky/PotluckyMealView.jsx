@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Star, Clock, MapPin, Users, ChefHat, Heart, ShoppingCart, 
   Flame, Calendar, User, Mail, CheckCircle, XCircle, AlertCircle, 
-  Share2, MessageCircle, ChevronLeft, ChevronRight
+  Share2, MessageCircle, ChevronLeft, ChevronRight, CreditCard, ArrowRight
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { 
   apiGetMealById, 
   apiAddFavorite, 
   apiRemoveFavorite,  
 } from '../../services/potlucky';
 import OrderModal from './OrderModal';
+import OrderSuccessModal from './OrderSuccessModal';
 import Reviews from './Reviews';
-
 
 const PotluckyMealView = () => {
   const { mealId } = useParams();
@@ -24,6 +25,9 @@ const PotluckyMealView = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [orderData, setOrderData] = useState(null);
+  const [paymentData, setPaymentData] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // 'details' or 'reviews'
 
   const handleBack = () => navigate(-1);
@@ -37,29 +41,30 @@ const PotluckyMealView = () => {
         setMeal(data);
       } catch (error) {
         console.error('Failed to load meal:', error);
-        // You can add a toast notification here instead of Swal
+        
+        // Use SweetAlert for error handling
+        await Swal.fire({
+          icon: 'error',
+          title: 'Failed to Load Meal',
+          text: 'Could not load meal details. Please try again.',
+          confirmButtonColor: '#ea580c',
+          confirmButtonText: 'Retry'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Retry fetching meal
+            fetchMeal();
+          } else {
+            // Go back if user doesn't want to retry
+            navigate(-1);
+          }
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchMeal();
-  }, [mealId]);
-
-  // Check favorite status
-  // useEffect(() => {
-  //   const checkFavorite = async () => {
-  //     if (!mealId) return;
-  //     try {
-  //       const status = await apiCheckFavoriteStatus([mealId]);
-  //       setIsFavorite(status[mealId] || false);
-  //     } catch (error) {
-  //       console.error('Error checking favorite status:', error);
-  //     }
-  //   };
-
-  //   checkFavorite();
-  // }, [mealId]);
+  }, [mealId, navigate]);
 
   // Reset active image when meal changes
   useEffect(() => {
@@ -73,23 +78,103 @@ const PotluckyMealView = () => {
       if (isFavorite) {
         await apiRemoveFavorite(meal.id);
         setIsFavorite(false);
-        // Add success notification
+        
+        // Success notification
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true,
+        });
+        
+        Toast.fire({
+          icon: 'success',
+          title: 'Removed from favorites'
+        });
       } else {
         await apiAddFavorite(meal.id);
         setIsFavorite(true);
-        // Add success notification
+        
+        // Success notification
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true,
+        });
+        
+        Toast.fire({
+          icon: 'success',
+          title: 'Added to favorites'
+        });
       }
     } catch (error) {
       console.error('Failed to update favorite:', error);
-      // Add error notification
+      
+      // Error notification
+      await Swal.fire({
+        icon: 'error',
+        title: 'Action Failed',
+        text: 'Could not update favorites. Please try again.',
+        confirmButtonColor: '#ea580c',
+        timer: 3000
+      });
     }
   };
 
-  const handleOrderSuccess = (order) => {
-    // Handle successful order
+  // Enhanced order success handler with better user feedback
+  const handleOrderSuccess = (order, payment) => {
     console.log('Order placed successfully:', order);
-    // You can add a success notification here
-    // Maybe redirect to order tracking or order history
+    console.log('Payment data:', payment);
+    
+    setOrderData(order);
+    setPaymentData(payment);
+    setShowOrderModal(false);
+    setShowSuccessModal(true);
+
+    // Show initial success toast
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+    });
+
+    if (payment && order.payment?.method !== 'cash') {
+      Toast.fire({
+        icon: 'info',
+        title: 'Order placed! Complete payment to confirm.'
+      });
+    } else {
+      Toast.fire({
+        icon: 'success',
+        title: 'Order placed successfully!'
+      });
+    }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    
+    // Optional: Ask user if they want to view their orders
+    Swal.fire({
+      title: 'Order Placed!',
+      text: 'Would you like to view your orders or continue browsing?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ea580c',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'View Orders',
+      cancelButtonText: 'Continue Browsing'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/orders'); // Adjust route as needed
+      }
+      // If cancelled, just stay on current page
+    });
   };
 
   const formatDate = (dateString) =>
@@ -167,6 +252,35 @@ const PotluckyMealView = () => {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: meal.mealName,
+          text: `Check out this delicious ${meal.mealName} by ${meal.createdBy?.firstName} ${meal.createdBy?.lastName}`,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+        });
+        
+        Toast.fire({
+          icon: 'success',
+          title: 'Link copied to clipboard!'
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex justify-center items-center">
@@ -212,7 +326,10 @@ const PotluckyMealView = () => {
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <div className="flex items-center space-x-2">
-            <button className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
+            <button 
+              onClick={handleShare}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
               <Share2 className="w-5 h-5 text-gray-700" />
             </button>
             <button
@@ -568,6 +685,14 @@ const PotluckyMealView = () => {
         isOpen={showOrderModal}
         onClose={() => setShowOrderModal(false)}
         onOrderSuccess={handleOrderSuccess}
+      />
+
+      {/* Order Success Modal */}
+      <OrderSuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        order={orderData}
+        payment={paymentData}
       />
     </div>
   );

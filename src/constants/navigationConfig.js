@@ -20,7 +20,7 @@ const navigationConfig = {
     navigation: [
       // { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
       { id: 'browse', label: 'Browse', icon: 'Search' },
-      { id: 'eateries', label: 'Eateries', icon: 'Home' },
+      { id: 'eateries', label: 'Franchisee', icon: 'Home' },
       { id: 'orders', label: 'Orders', icon: 'ShoppingCart' },
       { id: 'favorites', label: 'Favorites', icon: 'Heart' }
     ]

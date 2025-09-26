@@ -226,7 +226,7 @@ const handleSubmit = async (e) => {
           </form>
 
           {/* Divider */}
-          <div className="mt-6 mb-6">
+          {/* <div className="mt-6 mb-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
@@ -235,10 +235,10 @@ const handleSubmit = async (e) => {
                 <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Social Login Buttons */}
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <button type="button" className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -248,7 +248,7 @@ const handleSubmit = async (e) => {
               </svg>
               Continue with Google
             </button>
-          </div>
+          </div> */}
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center">

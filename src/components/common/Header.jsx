@@ -1,4 +1,4 @@
-// 📁 src/components/common/Header.jsx - Fixed with higher z-index values
+// 📁 src/components/common/Header.jsx - Fixed with proper config handling
 
 import React, { useState, useEffect } from "react";
 import { Bell, User, Settings, LogOut, ChevronDown } from "lucide-react";
@@ -16,7 +16,9 @@ const Header = ({ currentRole }) => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
-  const config = navigationConfig[currentRole];
+  
+  // Add safety check for config
+  const config = navigationConfig?.[currentRole] || { avatar: "🍽️" }; // Default fallback
 
   // Load user data and profile picture on component mount
   useEffect(() => {
@@ -113,6 +115,17 @@ const Header = ({ currentRole }) => {
     };
   }, []);
 
+  // Add debug logging
+  useEffect(() => {
+    console.log('Header Debug Info:', {
+      currentRole,
+      config,
+      navigationConfig,
+      configExists: !!navigationConfig,
+      roleConfigExists: !!navigationConfig?.[currentRole]
+    });
+  }, [currentRole, config]);
+
   // Get first name from full name
   const getFirstName = (fullName) => {
     if (!fullName) return "User";
@@ -134,7 +147,7 @@ const Header = ({ currentRole }) => {
       franchisee: { name: 'Franchisee', emoji: '🏢', color: 'bg-purple-100 text-purple-800' },
       admin: { name: 'Administrator', emoji: '⚙️', color: 'bg-red-100 text-red-800' }
     };
-    return roleInfo[role] || { name: role, emoji: '👤', color: 'bg-gray-100 text-gray-800' };
+    return roleInfo[role] || { name: role || 'User', emoji: '👤', color: 'bg-gray-100 text-gray-800' };
   };
 
   const handleLogout = () => {
@@ -192,7 +205,7 @@ const Header = ({ currentRole }) => {
   return (
     <header className="bg-white shadow-sm border-b p-4 flex justify-between items-center relative z-40">
       <div className="flex items-center space-x-2">
-        <span className="text-2xl">{config.avatar}</span>
+        <span className="text-2xl">{config?.avatar || "🍽️"}</span>
         <Link to="/">
           <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text font-semibold text-xl text-transparent">
             Potluck

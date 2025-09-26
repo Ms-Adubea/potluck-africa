@@ -44,7 +44,7 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
- // Modified handleSubmit function in Login.jsx
+ // Fix the handleSubmit function in your Login.jsx
 const handleSubmit = async (e) => {
   e.preventDefault();
   
@@ -71,39 +71,30 @@ const handleSubmit = async (e) => {
     // Set auth token using helper function
     setAuthToken(token);
     
-    // Store user data including profile picture
-    await storeUserData(response);
+    // Store user data - CRITICAL: Make sure role is stored properly
+    const userData = {
+      name: `${response.firstName || ''} ${response.lastName || ''}`.trim() || response.name,
+      role: response.role, // Make sure this matches exactly: potchef, potlucky, etc.
+      email: response.email,
+      firstName: response.firstName,
+      lastName: response.lastName,
+      phone: response.phone
+    };
+    
+    await storeUserData(userData);
     
     // Debug logs
     console.log('Token stored:', localStorage.getItem('token'));
-    console.log('User role:', response.role);
-    console.log('User name:', response.name);
-    console.log('Profile picture stored:', localStorage.getItem('userProfilePicture') || localStorage.getItem('userProfilePicUrl'));
+    console.log('User role stored:', localStorage.getItem('userRole'));
+    console.log('Full user data:', userData);
     
-    // Get the correct route based on user role
-    const roleRoute = getRoleRoute(response.role);
-    console.log('User role route:', roleRoute);
-    
-    // Special redirect logic for potlucky users
-    let redirectPath;
-    if (response.role === 'potlucky') {
-      redirectPath = `/dashboard/potlucky/browse`;
-      console.log('Potlucky user detected, redirecting to browse page');
-    } else {
-      redirectPath = `/dashboard/${roleRoute}`;
-    }
-    
-    console.log('Navigating to:', redirectPath);
-    
-    // Redirect to appropriate page
-    navigate(redirectPath, { replace: true });
+    // FIXED: Always redirect to /dashboard and let Dashboard.jsx handle role-specific routing
+    console.log('Redirecting to dashboard...');
+    navigate('/dashboard', { replace: true });
     
   } catch (error) {
     console.error('Login error:', error);
-    
-    // Clear any partial auth data
     clearUserData();
-    
     setErrors({ 
       general: error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.' 
     });

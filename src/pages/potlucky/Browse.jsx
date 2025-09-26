@@ -540,50 +540,71 @@ const Browse = () => {
   ];
 
   // Transform API data to match component expectations
-  const transformMealData = (apiMeal) => {
-    return {
-      id: apiMeal.id,
-      name: apiMeal.mealName,
-      description: apiMeal.description,
-      price: apiMeal.price,
-      cuisine: apiMeal.cuisine,
-      location: apiMeal.pickupLocation,
-      rating: apiMeal.averageRating || 0,
-      reviewCount: apiMeal.reviewCount || 0,
-      available: apiMeal.status === 'Available',
-      deliveryTime: `${apiMeal.cookingTime} mins`,
-      image: apiMeal.photos && apiMeal.photos.length > 0 ? apiMeal.photos[0] : '/api/placeholder/300/200',
-      chef: {
-        name: `${apiMeal.createdBy.firstName} ${apiMeal.createdBy.lastName}`,
-        rating: 4.5
-      },
-      tags: [
-        apiMeal.category,
-        apiMeal.spiceLevel,
-        ...apiMeal.dietaryRestrictions,
-        `${apiMeal.servings} serving${apiMeal.servings > 1 ? 's' : ''}`
-      ].filter(Boolean),
-      fullMealData: apiMeal
-    };
+  // Replace your transformMealData function in Browse.jsx with this:
+const transformMealData = (apiMeal) => {
+  // Safely handle createdBy which can be null
+  let chefName = 'Unknown Chef';
+  if (apiMeal.createdBy && apiMeal.createdBy.firstName) {
+    chefName = `${apiMeal.createdBy.firstName} ${apiMeal.createdBy.lastName || ''}`.trim();
+  }
+
+  return {
+    id: apiMeal.id,
+    name: apiMeal.mealName,
+    description: apiMeal.description,
+    price: apiMeal.price,
+    cuisine: apiMeal.cuisine,
+    location: apiMeal.pickupLocation,
+    rating: apiMeal.averageRating || 0,
+    reviewCount: apiMeal.reviewCount || 0,
+    available: apiMeal.status === 'Available',
+    deliveryTime: `${apiMeal.cookingTime} mins`,
+    image: apiMeal.photos && apiMeal.photos.length > 0 
+      ? apiMeal.photos[0] 
+      : 'https://nyonyogh.com/wp-content/uploads/2024/01/d19188f6dcc876c7181db2797e951b70-540x440.jpg',
+    chef: {
+      name: chefName,
+      rating: 4.5
+    },
+    tags: [
+      apiMeal.category,
+      apiMeal.spiceLevel,
+      ...(apiMeal.dietaryRestrictions || []),
+      `${apiMeal.servings} serving${apiMeal.servings > 1 ? 's' : ''}`
+    ].filter(Boolean),
+    fullMealData: apiMeal
   };
+};
 
   // Fetch meals from API
-  useEffect(() => {
-    const fetchMeals = async () => {
-      try {
-        const response = await apiGetAllMeals();
-        const transformedMeals = response.map(transformMealData);
-        setMeals(transformedMeals);
-        setFilteredMeals(transformedMeals);
-      } catch (error) {
-        console.error('Failed to fetch meals:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Update your fetchMeals useEffect in Browse.jsx
+useEffect(() => {
+  const fetchMeals = async () => {
+    try {
+      const response = await apiGetAllMeals();
+      console.log('Raw meals data:', response);
+      
+      // Filter out non-available meals and transform
+      const availableMeals = response.filter(meal => meal.status === 'Available');
+      console.log('Available meals:', availableMeals.length, 'out of', response.length);
+      
+      const transformedMeals = availableMeals.map(transformMealData);
+      console.log('Transformed meals:', transformedMeals);
+      
+      setMeals(transformedMeals);
+      setFilteredMeals(transformedMeals);
+    } catch (error) {
+      console.error('Failed to fetch meals:', error);
+      // Set empty state on error to prevent infinite loading
+      setMeals([]);
+      setFilteredMeals([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchMeals();
-  }, []);
+  fetchMeals();
+}, []);
 
   useEffect(() => {
     filterMeals();

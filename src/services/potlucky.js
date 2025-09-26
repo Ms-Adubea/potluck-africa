@@ -189,15 +189,22 @@ export const apiEditReview = async (mealId, reviewId, reviewData) => {
 import { apiClient } from "./config";
 
 // === MEALS ===
+// Update your apiGetAllMeals function in potlucky.js
 export const apiGetAllMeals = async () => {
   try {
     const response = await apiClient.get('/meals');
     
+    console.log('Raw API response:', response.data);
+    
+    // Handle the nested structure from your API
     if (response.data?.meals && Array.isArray(response.data.meals)) {
       return response.data.meals;
     } else if (Array.isArray(response.data)) {
       return response.data;
     }
+    
+    // If no meals found, return empty array
+    console.warn('No meals found in response');
     return [];
   } catch (error) {
     console.error('Error fetching all meals:', error);

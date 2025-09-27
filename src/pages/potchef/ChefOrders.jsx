@@ -12,7 +12,7 @@ import {
 import { apiGetChefOrders, apiUpdateOrderStatus } from "../../services/potchef";
 import { useNotificationContext } from "../../contexts/NotificationContext";
 import { showBrowserNotification } from "../../utils/notificationUtils";
-
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 const ChefOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -20,17 +20,44 @@ const ChefOrders = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const { fetchUnreadCount } = useNotificationContext
+  const [error, setError] = useState(null);
+  
+  // 🔧 FIXED: Added parentheses to useNotificationContext()
+  const { fetchUnreadCount } = useNotificationContext();
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
         const data = await apiGetChefOrders(page);
-        setOrders(data.orders);
-        setTotalPages(data.totalPages);
+        
+        // Validate response structure
+        if (!data) {
+          throw new Error('No data received from server');
+        }
+        
+        const ordersArray = data.orders || data.data || data || [];
+        const totalPagesCount = data.totalPages || Math.ceil((data.total || ordersArray.length) / 10);
+        
+        setOrders(Array.isArray(ordersArray) ? ordersArray : []);
+        setTotalPages(totalPagesCount);
+        
       } catch (error) {
-        console.error("Error fetching chef orders", error);
+        console.error("Error fetching chef orders:", error);
+        setError(error.message || 'Failed to fetch orders');
+        setOrders([]);
+        
+        // Show SweetAlert error
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to Load Orders',
+          text: error.response?.status === 500 
+            ? 'Server error occurred. Please check with your backend partner or try again later.'
+            : error.message || 'Failed to fetch orders',
+          confirmButtonColor: '#ef4444'
+        });
       } finally {
         setLoading(false);
       }
@@ -41,7 +68,21 @@ const ChefOrders = () => {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
+      // Show loading toast
+      const loadingToast = Swal.fire({
+        title: 'Updating Order...',
+        text: `Setting status to ${newStatus}`,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
       const updatedOrder = await apiUpdateOrderStatus(orderId, newStatus);
+      
+      // Update local state
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === orderId
@@ -50,7 +91,7 @@ const ChefOrders = () => {
         )
       );
 
- // Show browser notification for status updates
+      // Show browser notification for status updates
       showBrowserNotification(
         `Order ${newStatus}`,
         {
@@ -59,12 +100,70 @@ const ChefOrders = () => {
         }
       );
 
-// Refresh notification count in case there are related notifications
-      fetchUnreadCount();
+      // 🔧 FIXED: Properly handle fetchUnreadCount with error handling
+      try {
+        await fetchUnreadCount();
+      } catch (notificationError) {
+        console.warn('Failed to refresh notification count:', notificationError);
+        // Don't fail the whole operation if notification count fails
+      }
+
+      // Close loading toast and show success
+      loadingToast.close();
+      
+      // Show success alert
+      Swal.fire({
+        icon: 'success',
+        title: 'Order Updated!',
+        text: `Order #${orderId.slice(-8)} has been marked as ${newStatus}`,
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+        timerProgressBar: true
+      });
 
     } catch (error) {
       console.error(`Error updating order ${orderId}:`, error);
-      alert("Failed to update order status. Please try again.");
+      
+      // Show detailed error message
+      let errorTitle = "Failed to Update Order";
+      let errorText = "Please try again.";
+      
+      if (error.response?.status === 500) {
+        errorText = "Server error occurred while updating order. Please try again or contact support.";
+      } else if (error.response?.status === 404) {
+        errorText = "Order not found. It may have been deleted or you don't have permission to modify it.";
+      } else if (error.response?.status === 403) {
+        errorText = "Access denied. You don't have permission to update this order.";
+      } else if (error.message) {
+        errorText = error.message;
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: errorTitle,
+        text: errorText,
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  };
+
+  // Confirmation dialog for order actions
+  const confirmOrderAction = async (orderId, newStatus, actionText) => {
+    const result = await Swal.fire({
+      title: `${actionText}?`,
+      text: `Are you sure you want to ${actionText.toLowerCase()} this order?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: `Yes, ${actionText}`,
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      await updateOrderStatus(orderId, newStatus);
     }
   };
 
@@ -112,19 +211,27 @@ const ChefOrders = () => {
   });
 
   const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    try {
+      return new Date(dateString).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (error) {
+      return "Invalid time";
+    }
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (error) {
+      return "Invalid date";
+    }
   };
 
   const filterOptions = [
@@ -160,6 +267,7 @@ const ChefOrders = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        <span className="ml-3 text-gray-600">Loading orders...</span>
       </div>
     );
   }
@@ -248,31 +356,33 @@ const ChefOrders = () => {
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium">
-                      {order.buyer.firstName} {order.buyer.lastName}
+                      {order.buyer?.firstName || 'Unknown'} {order.buyer?.lastName || 'Customer'}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {order.buyer.phone}
-                    </span>
-                  </div>
+                  {order.buyer?.phone && (
+                    <div className="flex items-center space-x-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        {order.buyer.phone}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Meal Info */}
                 <div className="bg-gray-50 rounded-lg p-3 mb-3">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium text-gray-900">
-                      {order.meal.name || `Meal ID: ${order.meal._id.slice(-8)}`}
+                      {order.meal?.mealName || order.meal?.name || order.meal?.title || `Meal ID: ${order.meal?._id?.slice(-8) || 'Unknown'}`}
                     </h4>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">
-                        Qty: {order.quantity}
+                        Qty: {order.quantity || 0}
                       </span>
                       <div className="flex items-center space-x-1">
                         <span className="w-2 text-green-600">¢</span>
                         <span className="font-semibold text-green-600">
-                          {order.totalPrice}
+                          {order.totalPrice || 0}
                         </span>
                       </div>
                     </div>
@@ -285,16 +395,18 @@ const ChefOrders = () => {
                 </div>
 
                 {/* Pickup Info */}
-                <div className="flex items-start space-x-2 mb-3">
-                  <Clock className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600">
-                      Pickup scheduled for {formatDate(order.pickupTime)} at {formatTime(order.pickupTime)}
-                    </p>
+                {order.pickupTime && (
+                  <div className="flex items-start space-x-2 mb-3">
+                    <Clock className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        Pickup scheduled for {formatDate(order.pickupTime)} at {formatTime(order.pickupTime)}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Action Buttons */}
+                {/* Action Buttons with confirmations */}
                 <div className="flex space-x-2">
                   {order.status.toLowerCase() === "pending" && (
                     <>
@@ -305,7 +417,7 @@ const ChefOrders = () => {
                         Accept & Start Cooking
                       </button>
                       <button
-                        onClick={() => updateOrderStatus(order._id, "Cancelled")}
+                        onClick={() => confirmOrderAction(order._id, "Cancelled", "Decline Order")}
                         className="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
                       >
                         Decline
@@ -321,6 +433,14 @@ const ChefOrders = () => {
                     </button>
                   )}
                   {order.status.toLowerCase() === "ready" && (
+                    <button
+                      onClick={() => updateOrderStatus(order._id, "Delivering")}
+                      className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      Start Delivery
+                    </button>
+                  )}
+                  {order.status.toLowerCase() === "delivering" && (
                     <button
                       onClick={() => updateOrderStatus(order._id, "Delivered")}
                       className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"

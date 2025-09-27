@@ -44,7 +44,7 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
- // Fix the handleSubmit function in your Login.jsx
+// 📁 src/pages/Login.jsx - Update your handleSubmit function in Login component
 const handleSubmit = async (e) => {
   e.preventDefault();
   
@@ -59,45 +59,39 @@ const handleSubmit = async (e) => {
     };
     
     const response = await apiLogin(credentials);
-    console.log('API Response:', response);
+    console.log('Login successful:', response);
     
-    // Handle different possible token property names
-    const token = response.accessToken || response.token || response.access_token;
-    
+    // The token is now stored in apiLogin function, including refresh token
+    const token = response.accessToken;
     if (!token) {
       throw new Error('No access token received from server');
     }
-    
-    // Set auth token using helper function
+
+    // Set auth token in axios headers
     setAuthToken(token);
     
-    // Store user data - CRITICAL: Make sure role is stored properly
-    const userData = {
-      name: `${response.firstName || ''} ${response.lastName || ''}`.trim() || response.name,
-      role: response.role, // Make sure this matches exactly: potchef, potlucky, etc.
-      email: response.email,
-      firstName: response.firstName,
-      lastName: response.lastName,
-      phone: response.phone
-    };
+    console.log('✅ Access token stored:', localStorage.getItem('token'));
+    console.log('✅ Refresh token stored:', localStorage.getItem('refreshToken'));
+    console.log('✅ User role stored:', localStorage.getItem('userRole'));
+    console.log('✅ User name stored:', localStorage.getItem('userName'));
     
-    await storeUserData(userData);
-    
-    // Debug logs
-    console.log('Token stored:', localStorage.getItem('token'));
-    console.log('User role stored:', localStorage.getItem('userRole'));
-    console.log('Full user data:', userData);
-    
-    // FIXED: Always redirect to /dashboard and let Dashboard.jsx handle role-specific routing
+    // Navigate to dashboard - let Dashboard.jsx handle role routing
     console.log('Redirecting to dashboard...');
     navigate('/dashboard', { replace: true });
     
   } catch (error) {
     console.error('Login error:', error);
+    
+    // Clear any partial auth data
     clearUserData();
-    setErrors({ 
-      general: error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.' 
-    });
+    
+    // Show user-friendly error
+    const errorMessage = error.response?.data?.error || 
+                        error.response?.data?.message || 
+                        error.message || 
+                        'Login failed. Please check your credentials and try again.';
+                        
+    setErrors({ general: errorMessage });
   } finally {
     setIsLoading(false);
   }

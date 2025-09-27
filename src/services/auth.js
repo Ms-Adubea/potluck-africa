@@ -406,9 +406,11 @@ const getUserDataFromStorage = () => {
 };
 
 // Helper function to clear user data on logout
+// Update your existing clearUserData function to also clear refresh token
 export const clearUserData = () => {
   // Clear authentication data
   localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken'); // Add this line
   localStorage.removeItem('userRole');
   
   // Clear user data
@@ -423,11 +425,30 @@ export const clearUserData = () => {
   clearProfilePicture();
 };
 
-// Check if user is authenticated
+// Update your isAuthenticated function to check token expiry
 export const isAuthenticated = () => {
   const token = localStorage.getItem('token');
   const userData = getUserDataFromStorage();
-  return !!(token && (userData.email || userData.name));
+  
+  if (!token || (!userData.email && !userData.name)) {
+    return false;
+  }
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    
+    // Check if token is expired
+    if (payload.exp < currentTime) {
+      console.log('Token expired');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error checking token validity:', error);
+    return false;
+  }
 };
 
 // Get current user data
@@ -437,3 +458,80 @@ export const getCurrentUser = () => {
   }
   return null;
 };
+
+
+// 📁 src/services/auth.js - Add these functions to your existing auth.js file
+
+// Add this refresh token function
+export const refreshAccessToken = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    console.log('Attempting to refresh token...');
+
+    const response = await apiClient.post('/users/refresh-token', {}, {
+      headers: {
+        'x-refresh-token': refreshToken
+      }
+    });
+
+    const { accessToken, refreshToken: newRefreshToken, user } = response.data;
+
+    // Update stored tokens
+    localStorage.setItem('token', accessToken);
+    if (newRefreshToken) {
+      localStorage.setItem('refreshToken', newRefreshToken);
+    }
+
+    // Update axios headers
+    setAuthToken(accessToken);
+
+    // Update user data if provided
+    if (user) {
+      await storeUserData(user);
+    }
+
+    console.log('Token refreshed successfully');
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user
+    };
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    
+    // Clear tokens and redirect to login on refresh failure
+    clearUserData();
+    localStorage.removeItem('refreshToken');
+    
+    // Only redirect if not already on login page
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    
+    throw error;
+  }
+};
+
+// Add token expiry check function
+export const isTokenExpiringSoon = (token) => {
+  if (!token) return true;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    const timeUntilExpiry = payload.exp - currentTime;
+    
+    // Return true if token expires in less than 5 minutes (300 seconds)
+    return timeUntilExpiry < 300;
+  } catch (error) {
+    console.error('Error checking token expiry:', error);
+    return true;
+  }
+};
+
+

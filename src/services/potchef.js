@@ -132,30 +132,30 @@ export const apiToggleMealAvailability = async (id, currentStatus) => {
 
 // Complete Profile
 export const apiGetBanks = async () => {
-    try {
-        const response = await apiClient.get('/banks');
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching banks:', error);
-        throw error;
-    }
+  try {
+    const response = await apiClient.get('/banks');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching banks:', error);
+    throw error;
+  }
 };
 
-export const apiConfirmBankAccount = async () => {
-    try {
-        const response = await apiClient.get('/resolve-account');
-        return response.data;
-    } catch (error) {
-        console.error('Error confirming bank account:', error);
-        throw error;
-    }
+export const apiConfirmBankAccount = async (accountNumber, bankCode) => {
+  try {
+    const response = await apiClient.get(`/resolve-account?accountNumber=${accountNumber}&bankCode=${bankCode}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error confirming bank account:', error);
+    throw error;
+  }
 };
 
 export const apiCompleteProfile = async (userData) => {
   try {
     const response = await apiClient.post('/complete-profile', userData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json', // Changed from multipart/form-data
       },
     });
     return response.data;

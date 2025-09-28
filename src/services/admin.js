@@ -16,7 +16,7 @@ export const apiGetUserById = async (userId) => {
 
 // DELETE user
 export const apiDeleteUser = async (userId) => {
-  const response = await apiClient.delete(`/admin/${userId}`);
+  const response = await apiClient.delete(`/admin/delete/${userId}`);
   return response.data;
 };
 

@@ -1,4 +1,4 @@
-// 📁 src/services/config.js - Replace your entire config.js with this updated version
+// 📁 src/services/config.js - Updated to handle temp tokens
 import axios from "axios";
 
 const baseUrl = import.meta.env.VITE_BASE_URL;
@@ -29,7 +29,8 @@ const processQueue = (error, token = null) => {
 // Request interceptor to add token and adjust content type
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // Check for regular token first, then temp token
+    const token = localStorage.getItem("token") || localStorage.getItem("tempToken");
     
     // Set content-type based on data type
     if (config.data instanceof FormData) {
@@ -57,6 +58,26 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Check if we're on profile completion page and have a temp token
+      const tempToken = localStorage.getItem('tempToken');
+      const isProfileCompletionPage = window.location.pathname === '/potchef-profile-completion';
+      
+      if (tempToken && !isProfileCompletionPage) {
+        // Only redirect if NOT on profile completion page
+        console.log('Temp token authentication failed, redirecting to login');
+        localStorage.removeItem('tempToken');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+      
+      // If we're on profile completion page with temp token, let it fail normally
+      if (tempToken && isProfileCompletionPage) {
+        console.log('Temp token failed on profile completion page');
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         // If we're already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -113,6 +134,7 @@ apiClient.interceptors.response.use(
           // Clear all auth data
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
+          localStorage.removeItem('tempToken');
           localStorage.removeItem('userRole');
           localStorage.removeItem('userName');
           localStorage.removeItem('userEmail');
@@ -132,11 +154,12 @@ apiClient.interceptors.response.use(
         console.log('No refresh token available, clearing auth data');
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tempToken');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
         localStorage.removeItem('userEmail');
         
-        if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/signup' && window.location.pathname !== '/potchef-profile-completion') {
           window.location.href = '/login';
         }
         
@@ -163,10 +186,24 @@ export const setAuthToken = (token) => {
   }
 };
 
+// Helper function to set temp token (for profile completion)
+export const setTempToken = (tempToken) => {
+  if (tempToken) {
+    localStorage.setItem("tempToken", tempToken);
+    apiClient.defaults.headers.common["Authorization"] = `Bearer ${tempToken}`;
+    console.log('Temp token set successfully');
+  } else {
+    localStorage.removeItem("tempToken");
+    delete apiClient.defaults.headers.common["Authorization"];
+    console.log('Temp token cleared');
+  }
+};
+
 // Helper function to clear token
 export const clearAuthToken = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
+  localStorage.removeItem("tempToken");
   delete apiClient.defaults.headers.common["Authorization"];
   console.log('All auth tokens cleared');
 };

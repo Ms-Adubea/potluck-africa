@@ -3,6 +3,7 @@ import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle, Camera, X,
 import { Link, useNavigate } from 'react-router-dom';
 import { apiRegister, storeUserData } from '../services/auth';
 import { storeCompressedProfilePicture } from '../utils/profilePictureUtils';
+import { setTempToken } from '../services/config';
 
 
 const Signup = () => {
@@ -73,55 +74,83 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
- const handleSubmit = async () => {
+ // Update your handleSubmit function in Signup.jsx
+const handleSubmit = async () => {
   if (!validateForm()) return;
 
   setIsLoading(true);
 
   try {
-    const formPayload = new FormData();
-    formPayload.append('firstName', formData.firstName);
-    formPayload.append('lastName', formData.lastName);
-    formPayload.append('email', formData.email);
-    formPayload.append('phone', formData.phone);
-    formPayload.append('password', formData.password);
-    formPayload.append('role', formData.role);
-    
-    if (formData.avatar) {
+    // For users without avatar - send JSON
+    if (!formData.avatar) {
+      const jsonPayload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role: formData.role
+      };
+
+      const response = await apiRegister(jsonPayload);
+      await handleSuccessfulRegistration(response);
+    } else {
+      // For users with avatar - send FormData
+      const formPayload = new FormData();
+      formPayload.append('firstName', formData.firstName);
+      formPayload.append('lastName', formData.lastName);
+      formPayload.append('email', formData.email);
+      formPayload.append('phone', formData.phone);
+      formPayload.append('password', formData.password);
+      formPayload.append('role', formData.role);
       formPayload.append('avatar', formData.avatar);
+
+      const response = await apiRegister(formPayload);
+      await handleSuccessfulRegistration(response);
     }
 
-    // Call the real backend API
-    const response = await apiRegister(formPayload);
-    
-     // Store user data including profile picture
-    const userData = {
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      role: formData.role,
-      // Include profile picture URL from server response if available
-      profilePicture: response.profilePicture || response.profilePictureUrl || response.avatar
-    };
-    
-    // Store profile picture locally for PWA
-    if (formData.avatar) {
-      await storeCompressedProfilePicture(formData.avatar);
-    }
-    
-    // If the backend returns a profile picture URL, store that too
-    if (response.data?.profilePictureUrl) {
-      localStorage.setItem('userProfilePicUrl', response.data.profilePictureUrl);
-    }
-
-    await storeUserData(userData, formData.avatar);
-    alert('Account created successfully! Welcome to Potluck!');
-    navigate('/login');
   } catch (error) {
     console.error('Registration error:', error);
     alert(error.response?.data?.message || 'Registration failed. Please try again.');
   } finally {
     setIsLoading(false);
   }
+};
+
+const handleSuccessfulRegistration = async (response) => {
+  // Store user data including profile picture
+  const userData = {
+    name: `${formData.firstName} ${formData.lastName}`,
+    email: formData.email,
+    role: formData.role,
+    profilePicture: response.profilePicture || response.profilePictureUrl || response.avatar
+  };
+  
+  if (formData.avatar) {
+    await storeCompressedProfilePicture(formData.avatar);
+  }
+  
+  if (response.data?.profilePictureUrl) {
+    localStorage.setItem('userProfilePicUrl', response.data.profilePictureUrl);
+  }
+
+  await storeUserData(userData, formData.avatar);
+
+// Check if this is a potchef registration that needs profile completion
+    if (formData.role === 'potchef' && response.tempToken && response.requiresProfileCompletion) {
+      // Store the temporary token for profile completion
+      localStorage.setItem('tempToken', response.tempToken);
+      
+      // Also set it in axios headers immediately
+     
+      setTempToken(response.tempToken);
+      
+      alert('Registration successful! Please complete your profile to start selling meals.');
+      navigate('/potchef-profile-completion');
+    } else {
+      alert('Account created successfully! Welcome to Potluck!');
+      navigate('/login');
+    }
 };
 
 

@@ -182,7 +182,7 @@
 
 
 // 📁 src/services/auth.js - Fixed for your backend
-import { apiClient } from "./config";
+import { apiClient, setAuthToken } from "./config";
 import { 
   storeProfilePictureUrl, 
   storeCompressedProfilePicture, 
@@ -192,11 +192,14 @@ import {
 
 export const apiRegister = async (userData) => {
   try {
+    const isFormData = userData instanceof FormData;
+    
     const response = await apiClient.post('/users/register', userData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': isFormData ? 'multipart/form-data' : 'application/json',
       },
     });
+    
     return response.data;
   } catch (error) {
     console.error('Registration error:', error);
@@ -405,12 +408,12 @@ const getUserDataFromStorage = () => {
   };
 };
 
-// Helper function to clear user data on logout
-// Update your existing clearUserData function to also clear refresh token
+// Clear user data function should also clear temp token
 export const clearUserData = () => {
   // Clear authentication data
   localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken'); // Add this line
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('tempToken'); // Add this line
   localStorage.removeItem('userRole');
   
   // Clear user data
@@ -425,12 +428,13 @@ export const clearUserData = () => {
   clearProfilePicture();
 };
 
-// Update your isAuthenticated function to check token expiry
+
+// Update your isAuthenticated function to handle temp tokens
 export const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || localStorage.getItem('tempToken');
   const userData = getUserDataFromStorage();
   
-  if (!token || (!userData.email && !userData.name)) {
+  if (!token) {
     return false;
   }
   
@@ -450,6 +454,7 @@ export const isAuthenticated = () => {
     return false;
   }
 };
+
 
 // Get current user data
 export const getCurrentUser = () => {
@@ -534,4 +539,33 @@ export const isTokenExpiringSoon = (token) => {
   }
 };
 
-
+export const isTempTokenValid = () => {
+  const tempToken = localStorage.getItem('tempToken');
+  
+  if (!tempToken) {
+    return false;
+  }
+  
+  try {
+    const payload = JSON.parse(atob(tempToken.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    
+    // Check if token is expired
+    if (payload.exp < currentTime) {
+      console.log('Temp token expired');
+      localStorage.removeItem('tempToken');
+      return false;
+    }
+    
+    // Check if it's actually a temp token
+    if (payload.temp && payload.scope === 'profile_completion') {
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking temp token validity:', error);
+    localStorage.removeItem('tempToken');
+    return false;
+  }
+};

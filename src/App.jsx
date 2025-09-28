@@ -1,5 +1,9 @@
 // 📁 src/App.jsx - Modified to redirect potlucky index to browse
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 import HomePage from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -44,6 +48,7 @@ import NotificationTestPanel from "./components/common/NotificationTestPanel";
 import NotificationManager from "./pages/admin/NotificationManager";
 import Eateries from "./pages/potlucky/Eateries";
 import OrderTracking from "./pages/potlucky/OrderTracking";
+import PotchefProfileCompletion from "./pages/potchef/PotchefProfileCompletion";
 
 function App() {
   useEffect(() => {
@@ -63,6 +68,10 @@ function App() {
     {
       path: "/signup",
       element: <Signup />,
+    },
+    {
+      path: "/potchef-profile-completion",
+      element: <PotchefProfileCompletion />,
     },
     {
       path: "/login",

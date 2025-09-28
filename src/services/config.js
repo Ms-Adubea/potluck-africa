@@ -1,4 +1,4 @@
-// 📁 src/services/config.js - Updated to handle temp tokens
+// 📁 src/services/config.js - Fixed circular import issue
 import axios from "axios";
 
 const baseUrl = import.meta.env.VITE_BASE_URL;
@@ -24,6 +24,16 @@ const processQueue = (error, token = null) => {
   });
   
   failedQueue = [];
+};
+
+// Internal refresh function to avoid circular import
+const internalRefreshToken = async (refreshToken) => {
+  const response = await apiClient.post('/users/refresh-token', {}, {
+    headers: {
+      'x-refresh-token': refreshToken
+    }
+  });
+  return response.data;
 };
 
 // Request interceptor to add token and adjust content type
@@ -99,13 +109,8 @@ apiClient.interceptors.response.use(
         try {
           console.log('Attempting automatic token refresh...');
           
-          const response = await apiClient.post('/users/refresh-token', {}, {
-            headers: {
-              'x-refresh-token': refreshToken
-            }
-          });
-
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
+          const responseData = await internalRefreshToken(refreshToken);
+          const { accessToken, refreshToken: newRefreshToken } = responseData;
 
           // Update stored tokens
           localStorage.setItem('token', accessToken);

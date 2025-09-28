@@ -1,4 +1,4 @@
-// 📁 src/App.jsx - Modified to redirect potlucky index to browse
+// 📁 src/App.jsx - Modified to remove NotificationProvider (now in Dashboard)
 import {
   createBrowserRouter,
   RouterProvider,
@@ -16,7 +16,6 @@ import FranchiseeDashboard from "./components/roles/FranchiseeDashboard";
 import AdminDashboard from "./components/roles/AdminDashboard";
 import AddMeal from "./pages/potchef/AddMeal";
 import MyMeals from "./pages/potchef/MyMeals";
-// import MealDetailView from './pages/potchef/MealDetailView';
 import EditMeal from "./pages/potchef/EditMeal";
 import Browse from "./pages/potlucky/Browse";
 import ChefOrders from "./pages/potchef/ChefOrders";
@@ -42,7 +41,6 @@ import AddFranchisee from "./pages/admin/AddFranchisee";
 import AddUsers from "./pages/admin/AddUsers";
 import FranchiseeManagement from "./pages/admin/FranchiseeManagement";
 import EditFranchiseeModal from "./pages/admin/EditFranchisee";
-import { NotificationProvider } from "./contexts/NotificationContext";
 import NotificationsPage from "./components/common/NotificationPage";
 import NotificationTestPanel from "./components/common/NotificationTestPanel";
 import NotificationManager from "./pages/admin/NotificationManager";
@@ -89,9 +87,9 @@ function App() {
     {
       path: "/potchef-onboarding",
       element: (
-        <ProtectedRoute requiredRole="potchef">
+        // <ProtectedRoute requiredRole="potchef">
           <PotchefOnboarding />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       ),
     },
     {
@@ -440,11 +438,7 @@ function App() {
     },
   ]);
 
-  return (
-    <NotificationProvider>
-      <RouterProvider router={router} />
-    </NotificationProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

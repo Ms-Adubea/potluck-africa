@@ -171,7 +171,7 @@ const PotluckyMealView = () => {
       cancelButtonText: 'Continue Browsing'
     }).then((result) => {
       if (result.isConfirmed) {
-        navigate('/orders'); // Adjust route as needed
+        navigate('/dashboard/potlucky/orders'); // Adjust route as needed
       }
       // If cancelled, just stay on current page
     });

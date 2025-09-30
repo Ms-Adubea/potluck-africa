@@ -12,12 +12,15 @@ import {
   RefreshCw,
   MessageSquare,
   Receipt,
-  Calendar,
-  Truck,
-  User
+  CreditCard,
+  Smartphone,
+  Phone,
+  Mail,
+  X
 } from 'lucide-react';
 import { apiGetUserOrders, apiCancelOrder } from '../../services/potlucky';
-import Reviews from './Reviews';
+import { apiCreatePayment } from '../../services/payment';
+import Swal from 'sweetalert2';
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -26,6 +29,7 @@ const OrderHistory = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showReview, setShowReview] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -41,8 +45,6 @@ const OrderHistory = () => {
     try {
       setLoading(true);
       const response = await apiGetUserOrders();
-      
-      // Transform API response to match component expectations
       const transformedOrders = response.orders?.map(transformOrderData) || [];
       setOrders(transformedOrders);
       setFilteredOrders(transformedOrders);
@@ -60,29 +62,31 @@ const OrderHistory = () => {
       orderNumber: `PL${apiOrder._id?.slice(-6).toUpperCase() || 'UNKNOWN'}`,
       date: apiOrder.createdAt,
       status: apiOrder.status.toLowerCase(),
+      paymentStatus: apiOrder.payment?.status || 'pending',
+      paymentMethod: apiOrder.payment?.method || apiOrder.paymentMethod,
       meal: {
         id: apiOrder.meal._id || apiOrder.meal.id,
         name: apiOrder.meal.mealName || apiOrder.meal.name,
         chef: apiOrder.meal.createdBy ? 
           `${apiOrder.meal.createdBy.firstName} ${apiOrder.meal.createdBy.lastName}` : 
           'Unknown Chef',
-        chefRating: 4.5, // Default since not provided in API
+        chefRating: 4.5,
         image: apiOrder.meal.photos?.[0] || 'https://via.placeholder.com/400x300'
       },
       quantity: apiOrder.quantity,
       totalAmount: apiOrder.totalPrice,
-      deliveryFee: 0, // Not provided in API
+      deliveryFee: 0,
       finalAmount: apiOrder.totalPrice,
-      deliveryAddress: 'Pickup at chef location', // Since it's pickup-based
+      deliveryAddress: 'Pickup at chef location',
       estimatedDelivery: apiOrder.pickupTime,
       actualDelivery: apiOrder.status === 'delivered' ? apiOrder.updatedAt : null,
       specialInstructions: apiOrder.notes || '',
-      paymentMethod: 'Mobile Money', // Default since not provided
-      reviewed: false, // Would need separate API call to check
+      reviewed: false,
       userRating: null,
       userReview: null,
       canReorder: apiOrder.status === 'delivered',
       canReview: apiOrder.status === 'delivered',
+      canPay: apiOrder.payment?.status === 'pending' || apiOrder.payment?.status === 'failed',
       fullOrderData: apiOrder
     };
   };
@@ -90,7 +94,6 @@ const OrderHistory = () => {
   const filterOrders = () => {
     let filtered = orders;
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(order => 
         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,48 +102,33 @@ const OrderHistory = () => {
       );
     }
 
-    // Status filter
     if (activeFilter !== 'all') {
       filtered = filtered.filter(order => order.status === activeFilter);
     }
 
-    // Sort by date (newest first)
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-
     setFilteredOrders(filtered);
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'preparing':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'ready':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'delivered':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'preparing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ready': return 'bg-green-100 text-green-800 border-green-200';
+      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending':
-        return <AlertCircle className="w-4 h-4" />;
-      case 'preparing':
-        return <ChefHat className="w-4 h-4" />;
-      case 'ready':
-        return <Package className="w-4 h-4" />;
-      case 'delivered':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled':
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
+      case 'pending': return <AlertCircle className="w-4 h-4" />;
+      case 'preparing': return <ChefHat className="w-4 h-4" />;
+      case 'ready': return <Package className="w-4 h-4" />;
+      case 'delivered': return <CheckCircle className="w-4 h-4" />;
+      case 'cancelled': return <XCircle className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
     }
   };
 
@@ -161,23 +149,24 @@ const OrderHistory = () => {
   };
 
   const handleReorder = (order) => {
-    // Navigate to meal page for reordering
     window.location.href = `/dashboard/potlucky/browse/${order.meal.id}`;
   };
 
-  const handleCancelOrder = async (orderId, reason = 'User requested cancellation') => {
+  const handleCancelOrder = async (orderId) => {
     try {
-      await apiCancelOrder(orderId, reason);
-      // Refresh orders after cancellation
+      await apiCancelOrder(orderId, 'User requested cancellation');
       await fetchOrders();
     } catch (error) {
       console.error('Failed to cancel order:', error);
-      // Add error notification
     }
   };
 
   const handleReview = (orderId) => {
     setShowReview(orderId);
+  };
+
+  const handlePayNow = (order) => {
+    setShowPaymentModal(order);
   };
 
   const getFilterOptions = () => [
@@ -216,7 +205,6 @@ const OrderHistory = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Order History</h1>
         <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -224,7 +212,6 @@ const OrderHistory = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
         <input
@@ -236,7 +223,6 @@ const OrderHistory = () => {
         />
       </div>
 
-      {/* Filter Tabs */}
       <div className="flex overflow-x-auto space-x-2 pb-2">
         {filterOptions.map((option) => (
           <button
@@ -262,7 +248,6 @@ const OrderHistory = () => {
         ))}
       </div>
 
-      {/* Orders List */}
       <div className="space-y-4">
         {filteredOrders.length === 0 ? (
           <div className="text-center py-12">
@@ -275,7 +260,6 @@ const OrderHistory = () => {
         ) : (
           filteredOrders.map((order) => (
             <div key={order.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              {/* Order Header */}
               <div className="p-4 border-b border-gray-100">
                 <div className="flex justify-between items-start mb-3">
                   <div>
@@ -284,13 +268,24 @@ const OrderHistory = () => {
                       {formatDate(order.date)} at {formatTime(order.date)}
                     </p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(order.status)}`}>
-                    {getStatusIcon(order.status)}
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  <div className="flex flex-col items-end gap-2">
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(order.status)}`}>
+                      {getStatusIcon(order.status)}
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </div>
+                    {order.paymentStatus === 'pending' && order.paymentMethod !== 'cash' && (
+                      <div className="px-3 py-1 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-200">
+                        Payment Pending
+                      </div>
+                    )}
+                    {order.paymentStatus === 'failed' && (
+                      <div className="px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
+                        Payment Failed
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Meal Info */}
                 <div className="flex items-start space-x-3 mb-4">
                   <img
                     src={order.meal.image}
@@ -318,7 +313,6 @@ const OrderHistory = () => {
                   </div>
                 </div>
 
-                {/* Pickup Info */}
                 <div className="bg-gray-50 rounded-lg p-3 mb-4">
                   <div className="flex items-start space-x-2 mb-2">
                     <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
@@ -334,20 +328,9 @@ const OrderHistory = () => {
                         }
                       </span>
                     </div>
-                    {order.status === 'delivered' && order.actualDelivery && (
-                      <div className="flex items-center space-x-1">
-                        <Package className="w-4 h-4" />
-                        <span>
-                          {new Date(order.actualDelivery) <= new Date(order.estimatedDelivery) ? 
-                            'On time' : 'Late pickup'
-                          }
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Special Instructions */}
                 {order.specialInstructions && (
                   <div className="mb-4">
                     <p className="text-sm text-gray-600">
@@ -356,46 +339,16 @@ const OrderHistory = () => {
                   </div>
                 )}
 
-                {/* User Review */}
-                {order.reviewed && order.userReview && (
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < order.userRating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">Your Review</span>
-                    </div>
-                    <p className="text-sm text-gray-700">{order.userReview}</p>
-                  </div>
-                )}
-
-                {/* Order Summary */}
-                <div className="border-t pt-3 mb-4">
-                  <div className="flex justify-between text-sm text-gray-600 mb-1">
-                    <span>Subtotal ({order.quantity}x)</span>
-                    <span>¢{order.totalAmount}</span>
-                  </div>
-                  {order.deliveryFee > 0 && (
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>Delivery Fee</span>
-                      <span>¢{order.deliveryFee}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm font-medium text-gray-900">
-                    <span>Total</span>
-                    <span>¢{order.finalAmount}</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
                 <div className="flex space-x-2">
+                  {order.canPay && (
+                    <button
+                      onClick={() => handlePayNow(order)}
+                      className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Pay Now</span>
+                    </button>
+                  )}
                   {order.canReorder && (
                     <button
                       onClick={() => handleReorder(order)}
@@ -429,13 +382,11 @@ const OrderHistory = () => {
         )}
       </div>
 
-      {/* Review Modal */}
       {showReview && (
         <ReviewModal
           order={orders.find(o => o.id === showReview)}
           onClose={() => setShowReview(null)}
           onSubmit={async (orderId, rating, review) => {
-            // Update the order in state to reflect the review
             setOrders(orders.map(order => 
               order.id === orderId 
                 ? { ...order, reviewed: true, userRating: rating, userReview: review, canReview: false }
@@ -445,11 +396,18 @@ const OrderHistory = () => {
           }}
         />
       )}
+
+      {showPaymentModal && (
+        <PaymentModal
+          order={showPaymentModal}
+          onClose={() => setShowPaymentModal(null)}
+          onSuccess={fetchOrders}
+        />
+      )}
     </div>
   );
 };
 
-// Review Modal Component
 const ReviewModal = ({ order, onClose, onSubmit }) => {
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState('');
@@ -459,8 +417,6 @@ const ReviewModal = ({ order, onClose, onSubmit }) => {
     if (rating && review.trim()) {
       setLoading(true);
       try {
-        // Here you would typically call an API to submit the review
-        // For now, we'll just call the parent's onSubmit
         await onSubmit(order.id, rating, review);
       } catch (error) {
         console.error('Failed to submit review:', error);
@@ -470,8 +426,17 @@ const ReviewModal = ({ order, onClose, onSubmit }) => {
     }
   };
 
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Review Your Order</h3>
@@ -479,7 +444,7 @@ const ReviewModal = ({ order, onClose, onSubmit }) => {
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
           >
-            <XCircle className="w-5 h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -543,6 +508,237 @@ const ReviewModal = ({ order, onClose, onSubmit }) => {
             {loading ? 'Submitting...' : 'Submit Review'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const PaymentModal = ({ order, onClose, onSuccess }) => {
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [momoDetails, setMomoDetails] = useState({ phone: '', provider: 'mtn' });
+  const [loading, setLoading] = useState(false);
+
+  const momoProviders = [
+    { value: 'mtn', label: 'MTN Mobile Money' },
+    { value: 'vodafone', label: 'Vodafone Cash' },
+    { value: 'airteltigo', label: 'AirtelTigo Money' }
+  ];
+
+  const handlePayment = async () => {
+    if (!paymentMethod) return;
+
+    if (paymentMethod === 'momo' && !momoDetails.phone.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Missing Information',
+        text: 'Please enter your mobile money number',
+        confirmButtonColor: '#ea580c'
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const paymentPayload = {
+        orderId: order.id,
+        method: paymentMethod
+      };
+
+      if (paymentMethod === 'momo') {
+        paymentPayload.momo = {
+          phone: momoDetails.phone.trim(),
+          provider: momoDetails.provider
+        };
+      }
+
+      const paymentResponse = await apiCreatePayment(paymentPayload);
+
+      if (paymentMethod === 'card') {
+        if (paymentResponse.authorizationUrl) {
+          window.open(paymentResponse.authorizationUrl, '_blank', 'width=600,height=600');
+          
+          Swal.fire({
+            title: 'Complete Your Payment',
+            html: `
+              <div class="text-left">
+                <p class="mb-3">A new window has opened for payment.</p>
+                <p class="mb-2"><strong>Order:</strong> #${order.orderNumber}</p>
+                <p class="mb-2"><strong>Reference:</strong> ${paymentResponse.paymentReference}</p>
+                <p class="mb-3">After completing payment, you can close this window.</p>
+              </div>
+            `,
+            icon: 'info',
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Payment Completed'
+          });
+        }
+      } else if (paymentMethod === 'momo') {
+        await Swal.fire({
+          icon: 'info',
+          title: 'Mobile Money Payment Initiated',
+          text: `Please check your phone for a payment prompt. Reference: ${paymentResponse.order.payment.reference}`,
+          confirmButtonColor: '#10b981'
+        });
+      }
+
+      onClose();
+      onSuccess();
+
+    } catch (error) {
+      console.error('Payment failed:', error);
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Payment Failed',
+        text: error.response?.data?.message || 'Failed to process payment. Please try again.',
+        confirmButtonColor: '#ea580c'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={handleOverlayClick}
+    >
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Complete Payment</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-gray-600">Order:</span>
+            <span className="font-medium">#{order.orderNumber}</span>
+          </div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-gray-600">Meal:</span>
+            <span className="font-medium">{order.meal.name}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Total Amount:</span>
+            <span className="font-bold text-lg">¢{order.finalAmount}</span>
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <label className="flex items-center p-4 border rounded-xl cursor-pointer transition-all hover:border-gray-400">
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="card"
+              checked={paymentMethod === 'card'}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="sr-only"
+            />
+            <CreditCard className={`w-5 h-5 mr-3 ${paymentMethod === 'card' ? 'text-orange-600' : 'text-gray-400'}`} />
+            <span className={`font-medium ${paymentMethod === 'card' ? 'text-orange-900' : 'text-gray-700'}`}>
+              Credit/Debit Card
+            </span>
+            {paymentMethod === 'card' && (
+              <CheckCircle className="w-5 h-5 text-orange-600 ml-auto" />
+            )}
+          </label>
+
+          <label className="flex items-center p-4 border rounded-xl cursor-pointer transition-all hover:border-gray-400">
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="momo"
+              checked={paymentMethod === 'momo'}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="sr-only"
+            />
+            <Smartphone className={`w-5 h-5 mr-3 ${paymentMethod === 'momo' ? 'text-orange-600' : 'text-gray-400'}`} />
+            <span className={`font-medium ${paymentMethod === 'momo' ? 'text-orange-900' : 'text-gray-700'}`}>
+              Mobile Money
+            </span>
+            {paymentMethod === 'momo' && (
+              <CheckCircle className="w-5 h-5 text-orange-600 ml-auto" />
+            )}
+          </label>
+        </div>
+
+        {paymentMethod === 'momo' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+              <Phone className="w-4 h-4 mr-2" />
+              Mobile Money Details
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Provider
+                </label>
+                <select
+                  value={momoDetails.provider}
+                  onChange={(e) => setMomoDetails(prev => ({ ...prev, provider: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  {momoProviders.map((provider) => (
+                    <option key={provider.value} value={provider.value}>
+                      {provider.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mobile Money Number
+                </label>
+                <input
+                  type="tel"
+                  value={momoDetails.phone}
+                  onChange={(e) => setMomoDetails(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="0241234567"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the number registered with your mobile money account
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={handlePayment}
+          disabled={loading || !paymentMethod || (paymentMethod === 'momo' && !momoDetails.phone.trim())}
+          className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold transition-all ${
+            loading || !paymentMethod || (paymentMethod === 'momo' && !momoDetails.phone.trim())
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-orange-600 text-white hover:bg-orange-700'
+          }`}
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <span>Processing...</span>
+            </>
+          ) : (
+            <>
+              <CreditCard className="w-5 h-5" />
+              <span>Pay ¢{order.finalAmount}</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

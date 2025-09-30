@@ -48,7 +48,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
     { value: 'airteltigo', label: 'AirtelTigo Money' }
   ];
 
-  // Generate time slots for pickup
+  // Generate time slots for pickup - FIXED to be between 30-60 minutes from now
   useEffect(() => {
     if (isOpen) {
       const generateTimeSlots = () => {
@@ -61,18 +61,25 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         startTime.setMinutes(startTime.getMinutes() + minutesToAdd);
         startTime.setSeconds(0, 0);
         
-        // Generate slots for the next 3 hours
-        for (let i = 0; i < 12; i++) {
+        // Calculate how many 15-minute slots fit within the 30-60 minute window
+        const endTime = new Date(now.getTime() + 60 * 60000); // 60 minutes from now
+        const maxSlots = Math.floor((endTime - startTime) / (15 * 60000)) + 1;
+        
+        // Generate slots within the 30-60 minute window
+        for (let i = 0; i < maxSlots; i++) {
           const time = new Date(startTime.getTime() + (i * 15 * 60000));
           
-          slots.push({
-            value: time.toISOString(),
-            label: time.toLocaleString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            })
-          });
+          // Only add if within 60 minutes from original "now"
+          if (time <= endTime) {
+            slots.push({
+              value: time.toISOString(),
+              label: time.toLocaleString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              })
+            });
+          }
         }
         return slots;
       };
@@ -219,7 +226,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         try {
           // Create payment using corrected payload
           const paymentPayload = {
-            orderId: orderResponse.order.id || orderResponse.order._id, // Use the correct ID field
+            orderId: orderResponse.order.id || orderResponse.order._id,
             method: paymentMethod
           };
 
@@ -462,7 +469,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
                 ))}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Pickup times start 30 minutes from now
+                Pickup times between 30-60 minutes from now
               </p>
             </div>
 

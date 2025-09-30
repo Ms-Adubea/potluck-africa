@@ -74,7 +74,7 @@ const AdminDashboard = () => {
       await apiApproveUser(userId, { action });
 
       // Remove the user from the pending list
-      setPendingUsers((prev) => prev.filter((user) => user.id !== userId));
+      setPendingUsers((prev) => prev.filter((user) => user._id !== userId));
       setPendingCount((prev) => prev - 1);
 
       // Show success message
@@ -216,7 +216,7 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               {pendingUsers.slice(0, 5).map((user) => (
                 <div
-                  key={user.id}
+                  key={user._id}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center space-x-4">
@@ -256,7 +256,7 @@ const AdminDashboard = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() =>
-                        navigate(`/dashboard/admin/pending-users/${user.id}`)
+                        navigate(`/dashboard/admin/pending-users/${user._id}`)
                       }
                       className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                       title="View Details"
@@ -264,16 +264,16 @@ const AdminDashboard = () => {
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleApproval(user.id, "approve")}
-                      disabled={processingUser === user.id}
+                      onClick={() => handleApproval(user._id, "approve")}
+                      disabled={processingUser === user._id}
                       className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Approve"
                     >
                       <CheckCircle className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleApproval(user.id, "reject")}
-                      disabled={processingUser === user.id}
+                      onClick={() => handleApproval(user._id, "reject")}
+                      disabled={processingUser === user._id}
                       className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Reject"
                     >

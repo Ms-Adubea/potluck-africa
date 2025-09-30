@@ -1,11 +1,11 @@
 // 📁 src/pages/admin/PendingUsers.jsx
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  CheckCircle, 
-  XCircle, 
+import React, { useState, useEffect } from "react";
+import {
+  Users,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
   Eye,
   Clock,
   Mail,
@@ -15,16 +15,16 @@ import {
   ChefHat,
   ShoppingCart,
   Building2,
-  Shield
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { apiGetAllPendingUsers, apiApproveUser } from '../../services/admin';
+  Shield,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { apiGetAllPendingUsers, apiApproveUser } from "../../services/admin";
 
 const PendingUsers = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
   const [processingUser, setProcessingUser] = useState(null);
   const navigate = useNavigate();
 
@@ -38,7 +38,7 @@ const PendingUsers = () => {
       const data = await apiGetAllPendingUsers();
       setPendingUsers(data.users || []);
     } catch (error) {
-      console.error('Error fetching pending users:', error);
+      console.error("Error fetching pending users:", error);
     } finally {
       setLoading(false);
     }
@@ -48,10 +48,10 @@ const PendingUsers = () => {
     try {
       setProcessingUser(userId);
       await apiApproveUser(userId, { action });
-      
+
       // Remove the user from the pending list after approval/rejection
-      setPendingUsers(prev => prev.filter(user => user.id !== userId));
-      
+      setPendingUsers((prev) => prev.filter((user) => user._id !== userId));
+
       // Show success message (you can integrate your notification system here)
       alert(`User ${action}d successfully!`);
     } catch (error) {
@@ -64,13 +64,13 @@ const PendingUsers = () => {
 
   const getRoleIcon = (role) => {
     switch (role) {
-      case 'potchef':
+      case "potchef":
         return <ChefHat className="w-4 h-4" />;
-      case 'potlucky':
+      case "potlucky":
         return <ShoppingCart className="w-4 h-4" />;
-      case 'franchisee':
+      case "franchisee":
         return <Building2 className="w-4 h-4" />;
-      case 'admin':
+      case "admin":
         return <Shield className="w-4 h-4" />;
       default:
         return <User className="w-4 h-4" />;
@@ -79,35 +79,35 @@ const PendingUsers = () => {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'potchef':
-        return 'bg-orange-100 text-orange-800';
-      case 'potlucky':
-        return 'bg-blue-100 text-blue-800';
-      case 'franchisee':
-        return 'bg-purple-100 text-purple-800';
-      case 'admin':
-        return 'bg-red-100 text-red-800';
+      case "potchef":
+        return "bg-orange-100 text-orange-800";
+      case "potlucky":
+        return "bg-blue-100 text-blue-800";
+      case "franchisee":
+        return "bg-purple-100 text-purple-800";
+      case "admin":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredUsers = pendingUsers.filter(user => {
-    const matchesSearch = 
+  const filteredUsers = pendingUsers.filter((user) => {
+    const matchesSearch =
       user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
-    
+
+    const matchesRole = filterRole === "all" || user.role === filterRole;
+
     return matchesSearch && matchesRole;
   });
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -126,7 +126,9 @@ const PendingUsers = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Pending Users</h1>
-            <p className="text-gray-600">Review and manage user registration requests</p>
+            <p className="text-gray-600">
+              Review and manage user registration requests
+            </p>
           </div>
           <div className="flex items-center space-x-2">
             <Clock className="w-5 h-5 text-orange-500" />
@@ -172,17 +174,19 @@ const PendingUsers = () => {
         {filteredUsers.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No pending users</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No pending users
+            </h3>
             <p className="text-gray-500">
-              {searchTerm || filterRole !== 'all' 
-                ? 'No users match your search criteria' 
-                : 'All users have been processed'}
+              {searchTerm || filterRole !== "all"
+                ? "No users match your search criteria"
+                : "All users have been processed"}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredUsers.map((user) => (
-              <div key={user.id} className="p-6 hover:bg-gray-50">
+              <div key={user._id} className="p-6 hover:bg-gray-50">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
@@ -203,7 +207,11 @@ const PendingUsers = () => {
                         <h3 className="text-lg font-medium text-gray-900">
                           {user.firstName} {user.lastName}
                         </h3>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(
+                            user.role
+                          )}`}
+                        >
                           {getRoleIcon(user.role)}
                           <span className="ml-1 capitalize">{user.role}</span>
                         </span>
@@ -228,23 +236,25 @@ const PendingUsers = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => navigate(`/dashboard/admin/pending-users/${user.id}`)}
+                      onClick={() =>
+                        navigate(`/dashboard/admin/pending-users/${user._id}`)
+                      }
                       className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                       title="View Details"
                     >
                       <Eye className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => handleApproval(user.id, 'approve')}
-                      disabled={processingUser === user.id}
+                      onClick={() => handleApproval(user._id, "approve")}
+                      disabled={processingUser === user._id}
                       className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span>Approve</span>
                     </button>
                     <button
-                      onClick={() => handleApproval(user.id, 'reject')}
-                      disabled={processingUser === user.id}
+                      onClick={() => handleApproval(user._id, "reject")}
+                      disabled={processingUser === user._id}
                       className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <XCircle className="w-4 h-4" />

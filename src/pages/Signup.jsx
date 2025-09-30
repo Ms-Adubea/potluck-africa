@@ -220,7 +220,7 @@ const Signup = () => {
       setTempToken(response.tempToken);
       
       await showInfoAlert(
-        'Registration successful! Please complete your profile to start selling meals.',
+        'Registration successful! Please complete your profile to start selling meals. You have 15 mins.',
         'Profile Completion Required'
       );
       navigate('/potchef-profile-completion');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChefHat, Loader2, Building2, CreditCard, CheckCircle, AlertCircle, ArrowRight, Phone, Search } from 'lucide-react';
+import { ChefHat, Loader2, Building2, CreditCard, CheckCircle, AlertCircle, ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiGetBanks, apiCompleteProfile } from '../../services/potchef';
 import { isTempTokenValid } from '../../services/auth';
@@ -14,7 +14,6 @@ const PotchefProfileCompletion = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    phone: '',
     payoutDetails: {
       type: 'bank',
       bank: {
@@ -27,7 +26,6 @@ const PotchefProfileCompletion = () => {
 
   const [selectedBank, setSelectedBank] = useState(null);
   const [showBankList, setShowBankList] = useState(false);
-  const [accountVerificationLoading, setAccountVerificationLoading] = useState(false);
 
   // Load banks on component mount and verify temp token
   useEffect(() => {
@@ -85,19 +83,6 @@ const PotchefProfileCompletion = () => {
   const validateStep1 = () => {
     const newErrors = {};
     
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^[\+]?[\d\s\-\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateStep2 = () => {
-    const newErrors = {};
-    
     if (!formData.payoutDetails.bank.bankCode) {
       newErrors.bank = 'Please select a bank';
     }
@@ -117,9 +102,7 @@ const PotchefProfileCompletion = () => {
   };
 
   const handleInputChange = (field, value) => {
-    if (field === 'phone') {
-      setFormData(prev => ({ ...prev, phone: value }));
-    } else if (field.startsWith('bank.')) {
+    if (field.startsWith('bank.')) {
       const bankField = field.replace('bank.', '');
       setFormData(prev => ({
         ...prev,
@@ -167,13 +150,11 @@ const PotchefProfileCompletion = () => {
   const handleNext = () => {
     if (step === 1 && validateStep1()) {
       setStep(2);
-    } else if (step === 2 && validateStep2()) {
-      setStep(3);
     }
   };
 
   const handleSubmit = async () => {
-    if (!validateStep2()) return;
+    if (!validateStep1()) return;
 
     setIsLoading(true);
 
@@ -188,7 +169,7 @@ const PotchefProfileCompletion = () => {
         localStorage.setItem('profileCompleted', 'true');
       }
 
-      setStep(4); // Success step
+      setStep(3); // Success step
     } catch (error) {
       console.error('Profile completion error:', error);
       
@@ -199,7 +180,7 @@ const PotchefProfileCompletion = () => {
         navigate('/login');
       } else {
         setErrors({ 
-          general: error.response?.data?.message || 'Profile completion failed. Please try again.' 
+          general: error.response?.data?.message || 'Bank account verification failed. Please check your bank details.' 
         });
       }
     } finally {
@@ -218,8 +199,8 @@ const PotchefProfileCompletion = () => {
         <div className="text-center pt-8 pb-6 px-8">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full">
-                <Link to="/">
-              <ChefHat className="h-8 w-8 text-white" />
+              <Link to="/">
+                <ChefHat className="h-8 w-8 text-white" />
               </Link>
             </div>
           </div>
@@ -230,15 +211,14 @@ const PotchefProfileCompletion = () => {
         {/* Progress Bar */}
         <div className="px-8 mb-6">
           <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-            <span className={step >= 1 ? 'text-orange-500 font-medium' : ''}>Contact Info</span>
-            <span className={step >= 2 ? 'text-orange-500 font-medium' : ''}>Bank Details</span>
-            <span className={step >= 3 ? 'text-orange-500 font-medium' : ''}>Review</span>
-            <span className={step >= 4 ? 'text-orange-500 font-medium' : ''}>Complete</span>
+            <span className={step >= 1 ? 'text-orange-500 font-medium' : ''}>Bank Details</span>
+            <span className={step >= 2 ? 'text-orange-500 font-medium' : ''}>Review</span>
+            <span className={step >= 3 ? 'text-orange-500 font-medium' : ''}>Complete</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(step / 4) * 100}%` }}
+              style={{ width: `${(step / 3) * 100}%` }}
             ></div>
           </div>
         </div>
@@ -254,45 +234,8 @@ const PotchefProfileCompletion = () => {
             </div>
           )}
 
-          {/* Step 1: Contact Information */}
+          {/* Step 1: Bank Details */}
           {step === 1 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-                
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      id="phone"
-                      type="tel"
-                      placeholder="0554093367"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 bg-orange-50 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
-                        errors.phone ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    />
-                  </div>
-                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
-                </div>
-              </div>
-
-              <button
-                onClick={handleNext}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center"
-              >
-                Continue to Bank Details
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Step 2: Bank Details */}
-          {step === 2 && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Bank Account Details</h3>
@@ -398,42 +341,29 @@ const PotchefProfileCompletion = () => {
                 </div>
               </div>
 
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 transition-all duration-200 flex items-center justify-center"
-                >
-                  Review Details
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
-              </div>
+              <button
+                onClick={handleNext}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 transition-all duration-200 flex items-center justify-center"
+              >
+                Review Details
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </button>
             </div>
           )}
 
-          {/* Step 3: Review */}
-          {step === 3 && (
+          {/* Step 2: Review */}
+          {step === 2 && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Review Your Details</h3>
                 
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                   <div>
-                    <span className="text-sm text-gray-600">Phone Number:</span>
-                    <p className="font-medium">{formData.phone}</p>
-                  </div>
-                  
-                  <hr />
-                  
-                  <div>
                     <span className="text-sm text-gray-600">Bank:</span>
                     <p className="font-medium">{selectedBank?.name}</p>
                   </div>
+                  
+                  <hr />
                   
                   <div>
                     <span className="text-sm text-gray-600">Account Number:</span>
@@ -449,7 +379,7 @@ const PotchefProfileCompletion = () => {
 
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(1)}
                   className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   Back
@@ -472,8 +402,8 @@ const PotchefProfileCompletion = () => {
             </div>
           )}
 
-          {/* Step 4: Success */}
-          {step === 4 && (
+          {/* Step 3: Success */}
+          {step === 3 && (
             <div className="text-center space-y-6">
               <div className="flex justify-center">
                 <div className="p-4 bg-green-100 rounded-full">

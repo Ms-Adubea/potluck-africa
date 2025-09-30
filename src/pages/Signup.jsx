@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import { ChefHat, Loader2, Eye, EyeOff, Mail, Lock, User, UserCircle, Camera, X, Phone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiRegister, storeUserData } from '../services/auth';
 import { storeCompressedProfilePicture } from '../utils/profilePictureUtils';
 import { setTempToken } from '../services/config';
-
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -24,48 +24,110 @@ const Signup = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const navigate = useNavigate();
 
-
   const roles = [
     { value: 'potchef', label: '🍳 Chef/Potchef', description: 'Cook and share your homemade meals' },
     { value: 'potlucky', label: '🍽️ Customer/Potlucky', description: 'Discover and order amazing home-cooked meals' },
-    // { value: 'franchisee', label: '🏢 Manager', description: 'Manage and approve local operations' }
   ];
+
+  // SweetAlert2 configuration for consistent styling
+  const showErrorAlert = (message) => {
+    return Swal.fire({
+      icon: 'error',
+      title: 'Registration Failed',
+      text: message,
+      confirmButtonColor: '#f97316',
+      confirmButtonText: 'Try Again',
+      background: '#fff',
+      color: '#1f2937',
+      customClass: {
+        confirmButton: 'bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors'
+      }
+    });
+  };
+
+  const showSuccessAlert = (message, title = 'Success!') => {
+    return Swal.fire({
+      icon: 'success',
+      title: title,
+      text: message,
+      confirmButtonColor: '#22c55e',
+      background: '#fff',
+      color: '#1f2937',
+      timer: 3000,
+      showConfirmButton: true
+    });
+  };
+
+  const showInfoAlert = (message, title = 'Complete Your Profile') => {
+    return Swal.fire({
+      icon: 'info',
+      title: title,
+      text: message,
+      confirmButtonColor: '#f97316',
+      confirmButtonText: 'Continue',
+      background: '#fff',
+      color: '#1f2937'
+    });
+  };
 
   const validateForm = () => {
     const newErrors = {};
     
+    // First Name validation
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.firstName)) {
+      newErrors.firstName = 'First name can only contain letters and spaces';
     }
     
+    // Last Name validation
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.lastName)) {
+      newErrors.lastName = 'Last name can only contain letters and spaces';
     }
     
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
     
+    // Phone validation
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^[\+]?[\d\s\-\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+    } else if (!/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
+      newErrors.phone = 'Please enter a valid phone number (at least 10 digits)';
     }
     
+    // Enhanced Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else {
+      if (formData.password.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+      } else if (!/(?=.*[a-z])/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least one lowercase letter';
+      } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least one uppercase letter';
+      } else if (!/(?=.*\d)/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least one number';
+      }
     }
     
+    // Confirm Password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
+    // Role validation
     if (!formData.role) {
       newErrors.role = 'Please select a role';
     }
@@ -74,106 +136,124 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
- // Update your handleSubmit function in Signup.jsx
-const handleSubmit = async () => {
-  if (!validateForm()) return;
-
-  setIsLoading(true);
-
-  try {
-    // For users without avatar - send JSON
-    if (!formData.avatar) {
-      const jsonPayload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        role: formData.role
-      };
-
-      const response = await apiRegister(jsonPayload);
-      await handleSuccessfulRegistration(response);
-    } else {
-      // For users with avatar - send FormData
-      const formPayload = new FormData();
-      formPayload.append('firstName', formData.firstName);
-      formPayload.append('lastName', formData.lastName);
-      formPayload.append('email', formData.email);
-      formPayload.append('phone', formData.phone);
-      formPayload.append('password', formData.password);
-      formPayload.append('role', formData.role);
-      formPayload.append('avatar', formData.avatar);
-
-      const response = await apiRegister(formPayload);
-      await handleSuccessfulRegistration(response);
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      // Show the first error in a sweet alert if there are validation errors
+      const firstError = Object.values(errors)[0];
+      showErrorAlert(firstError);
+      return;
     }
 
-  } catch (error) {
-    console.error('Registration error:', error);
-    alert(error.response?.data?.message || 'Registration failed. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+    setIsLoading(true);
 
-const handleSuccessfulRegistration = async (response) => {
-  // Store user data including profile picture
-  const userData = {
-    name: `${formData.firstName} ${formData.lastName}`,
-    email: formData.email,
-    role: formData.role,
-    profilePicture: response.profilePicture || response.profilePictureUrl || response.avatar
+    try {
+      let response;
+      
+      // For users without avatar - send JSON
+      if (!formData.avatar) {
+        const jsonPayload = {
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          password: formData.password,
+          role: formData.role
+        };
+
+        response = await apiRegister(jsonPayload);
+      } else {
+        // For users with avatar - send FormData
+        const formPayload = new FormData();
+        formPayload.append('firstName', formData.firstName.trim());
+        formPayload.append('lastName', formData.lastName.trim());
+        formPayload.append('email', formData.email.trim());
+        formPayload.append('phone', formData.phone.trim());
+        formPayload.append('password', formData.password);
+        formPayload.append('role', formData.role);
+        formPayload.append('avatar', formData.avatar);
+
+        response = await apiRegister(formPayload);
+      }
+
+      await handleSuccessfulRegistration(response);
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      // Extract error message from backend response
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message ||
+                          'Registration failed. Please try again.';
+      
+      await showErrorAlert(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
-  if (formData.avatar) {
-    await storeCompressedProfilePicture(formData.avatar);
-  }
-  
-  if (response.data?.profilePictureUrl) {
-    localStorage.setItem('userProfilePicUrl', response.data.profilePictureUrl);
-  }
 
-  await storeUserData(userData, formData.avatar);
+  const handleSuccessfulRegistration = async (response) => {
+    // Store user data including profile picture
+    const userData = {
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      role: formData.role,
+      profilePicture: response.profilePicture || response.profilePictureUrl || response.avatar
+    };
+    
+    if (formData.avatar) {
+      await storeCompressedProfilePicture(formData.avatar);
+    }
+    
+    if (response.data?.profilePictureUrl) {
+      localStorage.setItem('userProfilePicUrl', response.data.profilePictureUrl);
+    }
 
-// Check if this is a potchef registration that needs profile completion
+    await storeUserData(userData, formData.avatar);
+
+    // Check if this is a potchef registration that needs profile completion
     if (formData.role === 'potchef' && response.tempToken && response.requiresProfileCompletion) {
       // Store the temporary token for profile completion
       localStorage.setItem('tempToken', response.tempToken);
       
       // Also set it in axios headers immediately
-     
       setTempToken(response.tempToken);
       
-      alert('Registration successful! Please complete your profile to start selling meals.');
+      await showInfoAlert(
+        'Registration successful! Please complete your profile to start selling meals.',
+        'Profile Completion Required'
+      );
       navigate('/potchef-profile-completion');
     } else {
-      alert('Account created successfully! Welcome to Potluck!');
+      await showSuccessAlert(
+        'Account created successfully! Welcome to Potluck!',
+        'Welcome to Potluck!'
+      );
       navigate('/login');
     }
-};
-
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
+    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  const handleAvatarUpload = (e) => {
+  const handleAvatarUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        await showErrorAlert('Please select an image file (JPEG, PNG, etc.)');
         return;
       }
       
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        await showErrorAlert('Image size should be less than 5MB');
         return;
       }
       
@@ -192,6 +272,34 @@ const handleSuccessfulRegistration = async (response) => {
     setFormData(prev => ({ ...prev, avatar: null }));
     setAvatarPreview(null);
   };
+
+  // Password strength indicator
+  const getPasswordStrength = () => {
+    if (!formData.password) return null;
+    
+    const hasMinLength = formData.password.length >= 8;
+    const hasLowerCase = /[a-z]/.test(formData.password);
+    const hasUpperCase = /[A-Z]/.test(formData.password);
+    const hasNumber = /\d/.test(formData.password);
+    
+    const requirementsMet = [hasMinLength, hasLowerCase, hasUpperCase, hasNumber].filter(Boolean).length;
+    const strength = (requirementsMet / 4) * 100;
+    
+    let color = 'bg-red-500';
+    let text = 'Weak';
+    
+    if (strength >= 75) {
+      color = 'bg-green-500';
+      text = 'Strong';
+    } else if (strength >= 50) {
+      color = 'bg-yellow-500';
+      text = 'Medium';
+    }
+    
+    return { strength, color, text };
+  };
+
+  const passwordStrength = getPasswordStrength();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-red-50 to-orange-100 p-4">
@@ -276,7 +384,14 @@ const handleSuccessfulRegistration = async (response) => {
                   }`}
                 />
               </div>
-              {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
+              {errors.firstName && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.firstName}
+                </p>
+              )}
             </div>
 
             {/* Last Name */}
@@ -297,7 +412,14 @@ const handleSuccessfulRegistration = async (response) => {
                   }`}
                 />
               </div>
-              {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
+              {errors.lastName && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.lastName}
+                </p>
+              )}
             </div>
 
             {/* Email */}
@@ -318,7 +440,14 @@ const handleSuccessfulRegistration = async (response) => {
                   }`}
                 />
               </div>
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             {/* Phone Number */}
@@ -331,7 +460,7 @@ const handleSuccessfulRegistration = async (response) => {
                 <input
                   id="phone"
                   type="tel"
-                  placeholder="0554093367"
+                  placeholder="0554433221"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-orange-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
@@ -339,7 +468,14 @@ const handleSuccessfulRegistration = async (response) => {
                   }`}
                 />
               </div>
-              {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.phone}
+                </p>
+              )}
             </div>
 
             {/* Role Selection */}
@@ -370,7 +506,14 @@ const handleSuccessfulRegistration = async (response) => {
                   {roles.find(r => r.value === formData.role)?.description}
                 </p>
               )}
-              {errors.role && <p className="mt-1 text-sm text-red-600">{errors.role}</p>}
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.role}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -398,7 +541,47 @@ const handleSuccessfulRegistration = async (response) => {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+              
+              {/* Password Strength Indicator */}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs text-gray-500">Password strength:</span>
+                    <span className={`text-xs font-medium ${
+                      passwordStrength.text === 'Strong' ? 'text-green-600' :
+                      passwordStrength.text === 'Medium' ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                      {passwordStrength.text}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                      style={{ width: `${passwordStrength.strength}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.password}
+                </p>
+              )}
+              
+              {/* Password Requirements */}
+              <div className="mt-2 text-xs text-gray-500">
+                <p>Password must contain:</p>
+                <ul className="list-disc list-inside ml-2">
+                  <li className={formData.password.length >= 8 ? 'text-green-600' : ''}>At least 8 characters</li>
+                  <li className={/[a-z]/.test(formData.password) ? 'text-green-600' : ''}>One lowercase letter</li>
+                  <li className={/[A-Z]/.test(formData.password) ? 'text-green-600' : ''}>One uppercase letter</li>
+                  <li className={/\d/.test(formData.password) ? 'text-green-600' : ''}>One number</li>
+                </ul>
+              </div>
             </div>
 
             {/* Confirm Password */}
@@ -426,7 +609,14 @@ const handleSuccessfulRegistration = async (response) => {
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.confirmPassword}
+                </p>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -452,9 +642,9 @@ const handleSuccessfulRegistration = async (response) => {
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
               <Link to="/login">
-              <button className="text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors">
-                Sign in
-              </button>
+                <button className="text-orange-500 hover:text-orange-600 font-medium hover:underline transition-colors">
+                  Sign in
+                </button>
               </Link>
             </p>
           </div>

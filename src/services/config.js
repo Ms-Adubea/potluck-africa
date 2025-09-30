@@ -1,4 +1,4 @@
-// 📁 src/services/config.js - Fixed circular import issue
+// 📁 src/services/config.js - Fixed token refresh without circular import
 import axios from "axios";
 
 const baseUrl = import.meta.env.VITE_BASE_URL;
@@ -24,16 +24,6 @@ const processQueue = (error, token = null) => {
   });
   
   failedQueue = [];
-};
-
-// Internal refresh function to avoid circular import
-const internalRefreshToken = async (refreshToken) => {
-  const response = await apiClient.post('/users/refresh-token', {}, {
-    headers: {
-      'x-refresh-token': refreshToken
-    }
-  });
-  return response.data;
 };
 
 // Request interceptor to add token and adjust content type
@@ -73,7 +63,6 @@ apiClient.interceptors.response.use(
       const isProfileCompletionPage = window.location.pathname === '/potchef-profile-completion';
       
       if (tempToken && !isProfileCompletionPage) {
-        // Only redirect if NOT on profile completion page
         console.log('Temp token authentication failed, redirecting to login');
         localStorage.removeItem('tempToken');
         if (window.location.pathname !== '/login') {
@@ -109,8 +98,15 @@ apiClient.interceptors.response.use(
         try {
           console.log('Attempting automatic token refresh...');
           
-          const responseData = await internalRefreshToken(refreshToken);
-          const { accessToken, refreshToken: newRefreshToken } = responseData;
+          // Make refresh request directly here to avoid circular import
+          const response = await axios.post(`${baseUrl}/users/refresh-token`, {}, {
+            headers: {
+              'x-refresh-token': refreshToken,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const { accessToken, refreshToken: newRefreshToken, user } = response.data;
 
           // Update stored tokens
           localStorage.setItem('token', accessToken);
@@ -118,10 +114,21 @@ apiClient.interceptors.response.use(
             localStorage.setItem('refreshToken', newRefreshToken);
           }
 
+          // Update user data if provided
+          if (user) {
+            if (user.id) localStorage.setItem('userId', user.id);
+            if (user.role) localStorage.setItem('userRole', user.role);
+            if (user.firstName) localStorage.setItem('userFirstName', user.firstName);
+            if (user.lastName) localStorage.setItem('userLastName', user.lastName);
+            if (user.email) localStorage.setItem('userEmail', user.email);
+            const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+            if (fullName) localStorage.setItem('userName', fullName);
+          }
+
           // Update axios default headers
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
-          console.log('Token refreshed automatically');
+          console.log('✅ Token refreshed automatically');
 
           // Process the queue of failed requests
           processQueue(null, accessToken);
@@ -131,7 +138,9 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
 
         } catch (refreshError) {
-          console.error('Automatic token refresh failed:', refreshError);
+          console.error('❌ Automatic token refresh failed:', refreshError);
+          console.error('Response:', refreshError.response?.data);
+          console.error('Status:', refreshError.response?.status);
           
           // Process queue with error
           processQueue(refreshError, null);
@@ -143,6 +152,9 @@ apiClient.interceptors.response.use(
           localStorage.removeItem('userRole');
           localStorage.removeItem('userName');
           localStorage.removeItem('userEmail');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('userFirstName');
+          localStorage.removeItem('userLastName');
           
           // Only redirect if not already on login page
           if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
@@ -164,7 +176,9 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('userName');
         localStorage.removeItem('userEmail');
         
-        if (window.location.pathname !== '/login' && window.location.pathname !== '/signup' && window.location.pathname !== '/potchef-profile-completion') {
+        if (window.location.pathname !== '/login' && 
+            window.location.pathname !== '/signup' && 
+            window.location.pathname !== '/potchef-profile-completion') {
           window.location.href = '/login';
         }
         
@@ -183,7 +197,7 @@ export const setAuthToken = (token) => {
   if (token) {
     localStorage.setItem("token", token);
     apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    console.log('Auth token set successfully');
+    console.log('✅ Auth token set successfully');
   } else {
     localStorage.removeItem("token");
     delete apiClient.defaults.headers.common["Authorization"];
@@ -196,7 +210,7 @@ export const setTempToken = (tempToken) => {
   if (tempToken) {
     localStorage.setItem("tempToken", tempToken);
     apiClient.defaults.headers.common["Authorization"] = `Bearer ${tempToken}`;
-    console.log('Temp token set successfully');
+    console.log('✅ Temp token set successfully');
   } else {
     localStorage.removeItem("tempToken");
     delete apiClient.defaults.headers.common["Authorization"];

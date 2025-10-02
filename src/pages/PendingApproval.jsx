@@ -58,8 +58,8 @@ const PendingApproval = () => {
               <p className="text-sm text-blue-700">
                 If you have any questions or need to update your information, 
                 please contact our support team at{' '}
-                <a href="mailto:support@potluck.com" className="underline hover:no-underline">
-                  support@potluck.com
+                <a href="mailto: hello@potluck.africa" className="underline hover:no-underline">
+              hello@potluck.africa
                 </a>
               </p>
             </div>

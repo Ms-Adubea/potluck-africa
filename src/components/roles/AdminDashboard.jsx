@@ -324,13 +324,13 @@ const AdminDashboard = () => {
             </div>
           </button>
           <button
-            onClick={() => navigate("/dashboard/admin/analytics")}
+            onClick={() => navigate("/dashboard/admin/franchisees")}
             className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
           >
             <BarChart3 className="w-6 h-6 text-green-600" />
             <div className="text-left">
-              <p className="font-medium text-gray-900">Analytics</p>
-              <p className="text-sm text-gray-600">View reports</p>
+              <p className="font-medium text-gray-900">Franchisees</p>
+              <p className="text-sm text-gray-600">View Franchisees</p>
             </div>
           </button>
          

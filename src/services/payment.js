@@ -92,3 +92,11 @@ export const openPaymentWindow = (authorizationUrl, options = {}) => {
     
   return window.open(authorizationUrl, '_blank', windowFeatures);
 };
+
+
+
+// Vodafone momo payment only
+export const apiVodafoneMomo = async (voucherData) => {
+  const response = await apiClient.post('/api/payment/submit-otp', voucherData);
+  return response.data;
+};

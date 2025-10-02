@@ -13,11 +13,12 @@ import {
   Smartphone,
   Banknote,
   Phone,
-  Mail
+  Mail,
+  Copy
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { apiCreateOrder } from '../../services/potlucky';
-import { apiCreatePayment } from '../../services/payment';
+import { apiCreatePayment, apiVodafoneMomo } from '../../services/payment';
 import { getCurrentUser } from '../../services/auth';
 
 const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
@@ -33,6 +34,13 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
+  
+  // NEW: Track voucher flow state
+  const [voucherRequired, setVoucherRequired] = useState(false);
+  const [voucherCode, setVoucherCode] = useState('');
+  const [ussdCode, setUssdCode] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [expiresAt, setExpiresAt] = useState(null);
 
   // Payment method options
   const paymentMethods = [
@@ -103,6 +111,13 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
       setMomoDetails({ phone: '', provider: 'mtn' });
       setNotes('');
       setError('');
+      
+      // Reset voucher state
+      setVoucherRequired(false);
+      setVoucherCode('');
+      setUssdCode('');
+      setPaymentReference('');
+      setExpiresAt(null);
 
       // Pre-fill email from logged-in user
       if (currentUser?.email) {
@@ -171,7 +186,6 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
     setError('');
 
     try {
-      // Show loading state
       const loadingSwal = Swal.fire({
         title: 'Processing Your Order',
         html: 'Please wait while we process your order...',
@@ -182,7 +196,6 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         }
       });
 
-      // Create order data according to your API
       const orderData = {
         meal: meal.id,
         quantity,
@@ -191,7 +204,6 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         notes: notes.trim()
       };
 
-      // Add mobile money details if payment method is momo
       if (paymentMethod === 'momo') {
         orderData.momo = {
           phone: momoDetails.phone.trim(),
@@ -199,7 +211,6 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         };
       }
 
-      // Create the order first
       console.log('Creating order with data:', orderData);
       const orderResponse = await apiCreateOrder(orderData);
       console.log('Order created successfully:', orderResponse);
@@ -208,7 +219,6 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
 
       // Handle different payment methods
       if (paymentMethod === 'cash') {
-        // Cash payment - order is complete
         await Swal.fire({
           icon: 'success',
           title: 'Order Placed Successfully!',
@@ -224,13 +234,11 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
       } else {
         // Card or Mobile Money payment
         try {
-          // Create payment using corrected payload
           const paymentPayload = {
             orderId: orderResponse.order.id || orderResponse.order._id,
             method: paymentMethod
           };
 
-          // Add momo details for mobile money
           if (paymentMethod === 'momo') {
             paymentPayload.momo = {
               phone: momoDetails.phone.trim(),
@@ -239,13 +247,11 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
           }
 
           console.log('Creating payment with payload:', paymentPayload);
-          
           const paymentResponse = await apiCreatePayment(paymentPayload);
           
           if (paymentMethod === 'card') {
-            // Handle card payment with authorization URL
+            // Handle card payment
             if (paymentResponse.authorizationUrl) {
-              // Show confirmation before redirecting
               await Swal.fire({
                 title: 'Redirecting to Payment',
                 text: 'You will be redirected to Paystack to complete your card payment.',
@@ -256,10 +262,8 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
                 cancelButtonText: 'Cancel'
               }).then((result) => {
                 if (result.isConfirmed) {
-                  // Open payment URL in new tab/window
                   window.open(paymentResponse.authorizationUrl, '_blank', 'width=600,height=600');
                   
-                  // Show instructions to user
                   Swal.fire({
                     title: 'Complete Your Payment',
                     html: `
@@ -278,18 +282,99 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
             }
 
           } else if (paymentMethod === 'momo') {
-            // Handle mobile money payment
-            if (paymentResponse.order.payment.reference) {
+            // NEW: Handle different MoMo authorization types
+            console.log('Payment response:', paymentResponse);
+            
+            const authType = paymentResponse.authorizationType;
+            setPaymentReference(paymentResponse.paymentReference);
+            
+            if (authType === 'voucher') {
+              // Vodafone requires voucher
+              setUssdCode(paymentResponse.displayText || '*170*10#');
+              setExpiresAt(paymentResponse.expiresAt);
+              setVoucherRequired(true);
+              setLoading(false);
+              
+              // Show USSD instructions
+              await Swal.fire({
+                icon: 'info',
+                title: 'Complete Mobile Money Payment',
+                html: `
+                  <div class="text-left space-y-3">
+                    <p class="font-semibold">Step 1: Dial USSD Code</p>
+                    <div class="bg-blue-50 p-3 rounded flex items-center justify-between">
+                      <code class="text-lg font-bold">${paymentResponse.displayText || '*170*10#'}</code>
+                      <button onclick="navigator.clipboard.writeText('${paymentResponse.displayText}')" 
+                              class="text-blue-600 hover:text-blue-800">
+                        Copy
+                      </button>
+                    </div>
+                    
+                    <p class="font-semibold mt-4">Step 2: Enter Voucher Code</p>
+                    <p class="text-sm text-gray-600">
+                      After dialing the code, you'll receive a voucher. 
+                      Enter it below to complete payment.
+                    </p>
+                    
+                    ${paymentResponse.expiresAt ? `
+                      <p class="text-xs text-red-600 mt-2">
+                        ⏰ Code expires: ${new Date(paymentResponse.expiresAt).toLocaleTimeString()}
+                      </p>
+                    ` : ''}
+                  </div>
+                `,
+                confirmButtonColor: '#ea580c',
+                confirmButtonText: 'I have the voucher code'
+              });
+              
+              // Keep modal open to show voucher input
+              return;
+              
+            } else if (authType === 'offline') {
+              // MTN/AirtelTigo - just show USSD
+              await Swal.fire({
+                icon: 'info',
+                title: 'Complete Mobile Money Payment',
+                html: `
+                  <div class="text-left space-y-3">
+                    <p class="font-semibold">Dial this USSD Code:</p>
+                    <div class="bg-blue-50 p-3 rounded flex items-center justify-between">
+                      <code class="text-lg font-bold">${paymentResponse.displayText}</code>
+                      <button onclick="navigator.clipboard.writeText('${paymentResponse.displayText}')" 
+                              class="text-blue-600 hover:text-blue-800">
+                        Copy
+                      </button>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-3">
+                      Follow the prompts on your phone to approve the payment.
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      Reference: ${paymentResponse.paymentReference}
+                    </p>
+                  </div>
+                `,
+                confirmButtonColor: '#10b981'
+              });
+              
+              onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
+              onClose();
+              
+            } else {
+              // Online authorization URL (rare for MoMo)
+              if (paymentResponse.authorizationUrl) {
+                window.open(paymentResponse.authorizationUrl, '_blank');
+              }
+              
               await Swal.fire({
                 icon: 'info',
                 title: 'Mobile Money Payment Initiated',
-                text: `Please check your phone for a payment prompt. Reference: ${paymentResponse.order.payment.reference}`,
+                text: `Please check your phone for a payment prompt. Reference: ${paymentResponse.paymentReference}`,
                 confirmButtonColor: '#10b981'
               });
-            }
 
-            onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
-            onClose();
+              onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
+              onClose();
+            }
           }
           
         } catch (paymentError) {
@@ -306,14 +391,6 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
           onClose();
         }
       }
-      
-      // Reset form
-      setQuantity(1);
-      setPickupTime('');
-      setPaymentMethod('');
-      setMomoDetails({ phone: '', provider: 'mtn' });
-      setCustomerEmail('');
-      setNotes('');
       
     } catch (error) {
       console.error('Order failed:', error);
@@ -336,6 +413,60 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
     }
   };
 
+  // NEW: Handle voucher submission
+  const handleVoucherSubmit = async () => {
+    if (!voucherCode.trim()) {
+      setError('Please enter the voucher code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const loadingSwal = Swal.fire({
+        title: 'Submitting Voucher',
+        html: 'Please wait...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const result = await apiVodafoneMomo({
+        reference: paymentReference,
+        voucherCode: voucherCode.trim()
+      });
+
+      loadingSwal.close();
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Voucher Submitted!',
+        text: 'Your payment is being processed. You will receive a confirmation shortly.',
+        confirmButtonColor: '#10b981',
+        timer: 3000
+      });
+
+      // Reset and close
+      setVoucherRequired(false);
+      setVoucherCode('');
+      onOrderSuccess && onOrderSuccess(result.order, result);
+      onClose();
+
+    } catch (error) {
+      console.error('Voucher submission failed:', error);
+      setError(error.response?.data?.message || 'Failed to submit voucher. Please try again.');
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Voucher Submission Failed',
+        text: error.response?.data?.message || 'Please check the code and try again.',
+        confirmButtonColor: '#ea580c'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const totalPrice = meal ? meal.price * quantity : 0;
 
   if (!isOpen || !meal) return null;
@@ -345,7 +476,9 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
       <div className="bg-white w-full max-h-[90vh] rounded-t-3xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Place Order</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {voucherRequired ? 'Enter Voucher Code' : 'Place Order'}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -357,277 +490,360 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          {/* Meal Summary */}
-          <div className="flex items-start space-x-4 mb-6 p-4 bg-gray-50 rounded-xl">
-            <img
-              src={meal.image || (meal.photos && meal.photos[0]) || 'https://via.placeholder.com/80x80'}
-              alt={meal.name || meal.mealName}
-              className="w-20 h-20 rounded-lg object-cover"
-              onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
-              }}
-            />
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{meal.name || meal.mealName}</h3>
-              <p className="text-sm text-gray-600 mt-1">by {meal.chef?.name || `${meal.createdBy?.firstName} ${meal.createdBy?.lastName}`}</p>
-              <div className="flex items-center space-x-2 mt-2">
-                <MapPin className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-600">{meal.location || meal.pickupLocation}</span>
+          {/* NEW: Show voucher input if required */}
+          {voucherRequired ? (
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h3 className="font-semibold text-blue-900 mb-3">
+                  Step 1: Dial USSD Code
+                </h3>
+                <div className="flex items-center justify-between bg-white p-3 rounded-lg">
+                  <code className="text-xl font-bold text-blue-900">{ussdCode}</code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(ussdCode);
+                      Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        timer: 1500,
+                        showConfirmButton: false
+                      });
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <Copy className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-bold text-gray-900">¢{meal.price}</p>
-              <p className="text-sm text-gray-500">per serving</p>
-            </div>
-          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-              <span className="text-red-700 text-sm">{error}</span>
-            </div>
-          )}
-
-          <div className="space-y-6">
-            {/* Customer Email - Show only for card and momo payments */}
-            {(paymentMethod === 'card' || paymentMethod === 'momo') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  <Mail className="w-4 h-4 inline mr-2" />
-                  Email Address
-                  {getCurrentUser()?.email && (
-                    <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                      ✓ Auto-filled
-                    </span>
-                  )}
+                  Step 2: Enter Voucher Code
                 </label>
                 <input
-                  type="email"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  placeholder={getCurrentUser()?.email || "your.email@example.com"}
+                  type="text"
+                  value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  maxLength="6"
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center text-2xl font-mono tracking-widest disabled:opacity-50"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Required for payment processing and order confirmation
+                <p className="text-xs text-gray-500 mt-2">
+                  You will receive this code after dialing the USSD code above
                 </p>
+                {expiresAt && (
+                  <p className="text-xs text-red-600 mt-1">
+                    ⏰ Expires: {new Date(expiresAt).toLocaleTimeString()}
+                  </p>
+                )}
               </div>
-            )}
 
-            {/* Quantity Selector */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="text-red-700 text-sm">{error}</span>
+                </div>
+              )}
+
+              <button
+                onClick={handleVoucherSubmit}
+                disabled={loading || !voucherCode.trim()}
+                className={`w-full flex items-center justify-center space-x-2 py-4 px-4 rounded-xl font-semibold text-lg transition-all ${
+                  loading || !voucherCode.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95'
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Submit Voucher</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            /* Your existing order form JSX */
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Quantity
-              </label>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-3 bg-gray-100 rounded-lg p-1">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={loading}
-                    className="flex items-center justify-center w-10 h-10 rounded-md bg-white shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
-                  >
-                    <Minus className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <span className="font-semibold text-lg min-w-[3rem] text-center">{quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    disabled={loading}
-                    className="flex items-center justify-center w-10 h-10 rounded-md bg-white shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
-                  >
-                    <Plus className="w-4 h-4 text-gray-600" />
-                  </button>
+              {/* Meal Summary */}
+              <div className="flex items-start space-x-4 mb-6 p-4 bg-gray-50 rounded-xl">
+                <img
+                  src={meal.image || (meal.photos && meal.photos[0]) || 'https://via.placeholder.com/80x80'}
+                  alt={meal.name || meal.mealName}
+                  className="w-20 h-20 rounded-lg object-cover"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
+                  }}
+                />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{meal.name || meal.mealName}</h3>
+                  <p className="text-sm text-gray-600 mt-1">by {meal.chef?.name || `${meal.createdBy?.firstName} ${meal.createdBy?.lastName}`}</p>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">{meal.location || meal.pickupLocation}</span>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-gray-900">¢{totalPrice.toFixed(2)}</p>
-                  <p className="text-sm text-gray-500">Total</p>
+                  <p className="text-lg font-bold text-gray-900">¢{meal.price}</p>
+                  <p className="text-sm text-gray-500">per serving</p>
                 </div>
               </div>
-            </div>
 
-            {/* Pickup Time */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Pickup Time
-              </label>
-              <select
-                value={pickupTime}
-                onChange={(e) => setPickupTime(e.target.value)}
-                required
-                disabled={loading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50"
-              >
-                <option value="">Select pickup time</option>
-                {timeSlots.map((slot) => (
-                  <option key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Pickup times between 30-60 minutes from now
-              </p>
-            </div>
+              {/* Error Message */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="text-red-700 text-sm">{error}</span>
+                </div>
+              )}
 
-            {/* Payment Method */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Payment Method
-              </label>
-              <div className="space-y-3">
-                {paymentMethods.map((method) => {
-                  const IconComponent = method.icon;
-                  return (
-                    <label
-                      key={method.value}
-                      className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
-                        paymentMethod === method.value
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      } ${loading ? 'pointer-events-none opacity-50' : ''}`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.value}
-                        checked={paymentMethod === method.value}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        disabled={loading}
-                        className="sr-only"
-                      />
-                      <IconComponent className={`w-5 h-5 mr-3 ${
-                        paymentMethod === method.value ? 'text-orange-600' : 'text-gray-400'
-                      }`} />
-                      <span className={`font-medium ${
-                        paymentMethod === method.value ? 'text-orange-900' : 'text-gray-700'
-                      }`}>
-                        {method.label}
-                      </span>
-                      {paymentMethod === method.value && (
-                        <CheckCircle className="w-5 h-5 text-orange-600 ml-auto" />
+              <div className="space-y-6">
+                {/* Customer Email - Show only for card and momo payments */}
+                {(paymentMethod === 'card' || paymentMethod === 'momo') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      <Mail className="w-4 h-4 inline mr-2" />
+                      Email Address
+                      {getCurrentUser()?.email && (
+                        <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                          ✓ Auto-filled
+                        </span>
                       )}
                     </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Mobile Money Details */}
-            {paymentMethod === 'momo' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Mobile Money Details
-                </h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Provider
-                    </label>
-                    <select
-                      value={momoDetails.provider}
-                      onChange={(e) => setMomoDetails(prev => ({ ...prev, provider: e.target.value }))}
-                      disabled={loading}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                    >
-                      {momoProviders.map((provider) => (
-                        <option key={provider.value} value={provider.value}>
-                          {provider.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mobile Money Number
-                    </label>
                     <input
-                      type="tel"
-                      value={momoDetails.phone}
-                      onChange={(e) => setMomoDetails(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="0241234567"
+                      type="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder={getCurrentUser()?.email || "your.email@example.com"}
                       disabled={loading}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter the number registered with your mobile money account
+                      Required for payment processing and order confirmation
                     </p>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* Special Instructions */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Special Instructions (Optional)
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any special requests or dietary notes..."
-                rows={3}
-                disabled={loading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none disabled:opacity-50"
-              />
-            </div>
+                {/* Quantity Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Quantity
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3 bg-gray-100 rounded-lg p-1">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={loading}
+                        className="flex items-center justify-center w-10 h-10 rounded-md bg-white shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        <Minus className="w-4 h-4 text-gray-600" />
+                      </button>
+                      <span className="font-semibold text-lg min-w-[3rem] text-center">{quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(quantity + 1)}
+                        disabled={loading}
+                        className="flex items-center justify-center w-10 h-10 rounded-md bg-white shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        <Plus className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900">¢{totalPrice.toFixed(2)}</p>
+                      <p className="text-sm text-gray-500">Total</p>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Order Summary */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal ({quantity}x)</span>
-                  <span className="font-medium">¢{totalPrice.toFixed(2)}</span>
+                {/* Pickup Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Pickup Time
+                  </label>
+                  <select
+                    value={pickupTime}
+                    onChange={(e) => setPickupTime(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50"
+                  >
+                    <option value="">Select pickup time</option>
+                    {timeSlots.map((slot) => (
+                      <option key={slot.value} value={slot.value}>
+                        {slot.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Pickup times between 30-60 minutes from now
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Estimated cooking time</span>
-                  <span className="font-medium">{meal.cookingTime || meal.deliveryTime} mins</span>
+
+                {/* Payment Method */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Payment Method
+                  </label>
+                  <div className="space-y-3">
+                    {paymentMethods.map((method) => {
+                      const IconComponent = method.icon;
+                      return (
+                        <label
+                          key={method.value}
+                          className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
+                            paymentMethod === method.value
+                              ? 'border-orange-500 bg-orange-50'
+                              : 'border-gray-300 hover:border-gray-400'
+                          } ${loading ? 'pointer-events-none opacity-50' : ''}`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value={method.value}
+                            checked={paymentMethod === method.value}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            disabled={loading}
+                            className="sr-only"
+                          />
+                          <IconComponent className={`w-5 h-5 mr-3 ${
+                            paymentMethod === method.value ? 'text-orange-600' : 'text-gray-400'
+                          }`} />
+                          <span className={`font-medium ${
+                            paymentMethod === method.value ? 'text-orange-900' : 'text-gray-700'
+                          }`}>
+                            {method.label}
+                          </span>
+                          {paymentMethod === method.value && (
+                            <CheckCircle className="w-5 h-5 text-orange-600 ml-auto" />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-                {paymentMethod && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Payment method</span>
-                    <span className="font-medium">
-                      {paymentMethods.find(m => m.value === paymentMethod)?.label}
-                    </span>
+
+                {/* Mobile Money Details */}
+                {paymentMethod === 'momo' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+                      <Phone className="w-4 h-4 mr-2" />
+                      Mobile Money Details
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Provider
+                        </label>
+                        <select
+                          value={momoDetails.provider}
+                          onChange={(e) => setMomoDetails(prev => ({ ...prev, provider: e.target.value }))}
+                          disabled={loading}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                        >
+                          {momoProviders.map((provider) => (
+                            <option key={provider.value} value={provider.value}>
+                              {provider.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Mobile Money Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={momoDetails.phone}
+                          onChange={(e) => setMomoDetails(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="0241234567"
+                          disabled={loading}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter the number registered with your mobile money account
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className="border-t pt-2 flex justify-between">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold text-lg">¢{totalPrice.toFixed(2)}</span>
+
+                {/* Special Instructions */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Special Instructions (Optional)
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Any special requests or dietary notes..."
+                    rows={3}
+                    disabled={loading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none disabled:opacity-50"
+                  />
                 </div>
+
+                {/* Order Summary */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal ({quantity}x)</span>
+                      <span className="font-medium">¢{totalPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Estimated cooking time</span>
+                      <span className="font-medium">{meal.cookingTime || meal.deliveryTime} mins</span>
+                    </div>
+                    {paymentMethod && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Payment method</span>
+                        <span className="font-medium">
+                          {paymentMethods.find(m => m.value === paymentMethod)?.label}
+                        </span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 flex justify-between">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-bold text-lg">¢{totalPrice.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading || !pickupTime || !paymentMethod || ((paymentMethod === 'card' || paymentMethod === 'momo') && !customerEmail)}
+                  className={`w-full flex items-center justify-center space-x-2 py-4 px-4 rounded-xl font-semibold text-lg transition-all ${
+                    loading || !pickupTime || !paymentMethod || ((paymentMethod === 'card' || paymentMethod === 'momo') && !customerEmail)
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95'
+                  }`}
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Placing Order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-5 h-5" />
+                      <span>Place Order</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-
-            {/* Submit Button */}
-            <button
-              onClick={handleSubmit}
-              disabled={loading || !pickupTime || !paymentMethod || ((paymentMethod === 'card' || paymentMethod === 'momo') && !customerEmail)}
-              className={`w-full flex items-center justify-center space-x-2 py-4 px-4 rounded-xl font-semibold text-lg transition-all ${
-                loading || !pickupTime || !paymentMethod || ((paymentMethod === 'card' || paymentMethod === 'momo') && !customerEmail)
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95'
-              }`}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Placing Order...</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-5 h-5" />
-                  <span>Place Order</span>
-                </>
-              )}
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>

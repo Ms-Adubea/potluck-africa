@@ -42,7 +42,7 @@ const navigationConfig = {
       { id: 'dashboard', label: 'Dashboard', icon: 'Home' },
       { id: 'users', label: 'Users', icon: 'Users' },
       { id: 'franchisees', label: 'Franchisees', icon: 'BarChart3' },
-      { id: 'content', label: 'Content', icon: 'Package' }
+      // { id: 'content', label: 'Content', icon: 'Package' }
     ]
   }
 };

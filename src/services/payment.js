@@ -15,10 +15,11 @@ export const apiCreatePayment = async (paymentData) => {
       throw new Error('Payment method is required');
     }
     
-    // Prepare payload according to your API documentation
+    // Prepare payload according to Paystack API
     const payload = {
       orderId: paymentData.orderId,
-      method: paymentData.method
+      method: paymentData.method,
+      email: paymentData.email // Required by Paystack for all payments
     };
 
     // Add mobile money details for momo payments
@@ -28,7 +29,8 @@ export const apiCreatePayment = async (paymentData) => {
       }
       payload.momo = {
         phone: paymentData.momo.phone,
-        provider: paymentData.momo.provider
+        provider: paymentData.momo.provider,
+        currency: getCurrencyForProvider(paymentData.momo.provider)
       };
     }
     
@@ -39,15 +41,9 @@ export const apiCreatePayment = async (paymentData) => {
     return response.data;
   } catch (error) {
     console.error('Create payment failed:', error);
-    console.error('Error response data:', error.response?.data);
-    console.error('Error response status:', error.response?.status);
-    console.error('Error response headers:', error.response?.headers);
     
-    // Extract more detailed error information
     let errorMessage = 'Payment initialization failed';
-    
     if (error.response?.data) {
-      // Handle different error response formats
       if (typeof error.response.data === 'string') {
         errorMessage = error.response.data;
       } else if (error.response.data.error) {
@@ -75,6 +71,70 @@ export const apiVerifyPayment = async (reference) => {
   }
 };
 
+// Vodafone momo payment only
+export const apiVodafoneMomo = async (voucherData) => {
+  try {
+    const response = await apiClient.post('/api/payments/submit-otp', voucherData);
+    return response.data;
+  } catch (error) {
+    console.error('Voucher submission failed:', error);
+    throw error;
+  }
+};
+
+// Check payment status after timeout (for offline providers)
+export const checkPaymentStatus = async (reference, maxAttempts = 12) => {
+  let attempts = 0;
+  
+  const checkStatus = async () => {
+    attempts++;
+    try {
+      const result = await apiVerifyPayment(reference);
+      console.log(`Payment check attempt ${attempts}:`, result);
+      
+      if (result.status === 'success' || result.status === 'failed') {
+        return result;
+      }
+      
+      if (attempts >= maxAttempts) {
+        return { 
+          status: 'timeout', 
+          message: 'Payment verification timeout after 3 minutes' 
+        };
+      }
+      
+      // Wait 15 seconds before next check (12 attempts = 3 minutes)
+      await new Promise(resolve => setTimeout(resolve, 15000));
+      return checkStatus();
+    } catch (error) {
+      console.error(`Payment check attempt ${attempts} failed:`, error);
+      
+      if (attempts >= maxAttempts) {
+        return { 
+          status: 'error', 
+          message: 'Payment verification failed after multiple attempts' 
+        };
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 15000));
+      return checkStatus();
+    }
+  };
+  
+  return checkStatus();
+};
+
+// Helper function to get currency for provider
+const getCurrencyForProvider = (provider) => {
+  const providerCurrencies = {
+    'mtn': 'GHS',
+    'vod': 'GHS', 
+    'airteltigo': 'GHS',
+    'atl': 'GHS' // Airtel Money
+  };
+  return providerCurrencies[provider] || 'GHS';
+};
+
 // Helper function to open payment URL
 export const openPaymentWindow = (authorizationUrl, options = {}) => {
   const defaultOptions = {
@@ -91,12 +151,4 @@ export const openPaymentWindow = (authorizationUrl, options = {}) => {
     .join(',');
     
   return window.open(authorizationUrl, '_blank', windowFeatures);
-};
-
-
-
-// Vodafone momo payment only
-export const apiVodafoneMomo = async (voucherData) => {
-  const response = await apiClient.post('/api/payment/submit-otp', voucherData);
-  return response.data;
 };

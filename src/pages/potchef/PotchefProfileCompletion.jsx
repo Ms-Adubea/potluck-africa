@@ -447,3 +447,667 @@ const PotchefProfileCompletion = () => {
 };
 
 export default PotchefProfileCompletion;
+
+
+// import React, { useState, useEffect } from 'react';
+// import { ChefHat, Loader2, Building2, CreditCard, CheckCircle, AlertCircle, ArrowRight, Search, Smartphone } from 'lucide-react';
+// import { Link, useNavigate } from 'react-router-dom';
+// import { apiGetBanks, apiCompleteProfile } from '../../services/potchef';
+// import { isTempTokenValid } from '../../services/auth';
+
+// const PotchefProfileCompletion = () => {
+//   const [step, setStep] = useState(1);
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [banks, setBanks] = useState([]);
+//   const [filteredBanks, setFilteredBanks] = useState([]);
+//   const [bankSearchTerm, setBankSearchTerm] = useState('');
+//   const [errors, setErrors] = useState({});
+//   const [payoutType, setPayoutType] = useState('bank'); // 'bank' or 'momo'
+//   const navigate = useNavigate();
+
+//   const [formData, setFormData] = useState({
+//     payoutDetails: {
+//       type: 'bank',
+//       bank: {
+//         bankCode: '',
+//         accountNumber: '',
+//         accountName: ''
+//       },
+//       momo: {
+//         provider: '',
+//         phoneNumber: ''
+//       }
+//     }
+//   });
+
+//   const [selectedBank, setSelectedBank] = useState(null);
+//   const [showBankList, setShowBankList] = useState(false);
+
+//   const momoProviders = [
+//     { code: 'MTN', name: 'MTN Mobile Money' },
+//     { code: 'VODAFONE', name: 'Vodafone Cash' },
+//     { code: 'AIRTELTIGO', name: 'AirtelTigo Money' }
+//   ];
+
+//   // Load banks on component mount and verify temp token
+//   useEffect(() => {
+//     if (!isTempTokenValid()) {
+//       console.log('No valid temp token found, redirecting to login');
+//       navigate('/login');
+//       return;
+//     }
+
+//     const fetchBanks = async () => {
+//       try {
+//         const response = await apiGetBanks();
+//         const bankList = response.data?.data || response.data || [];
+        
+//         const ghsBanks = bankList.filter(bank => 
+//           bank.currency === 'GHS' && 
+//           bank.active && 
+//           !bank.is_deleted &&
+//           bank.supports_transfer
+//         );
+        
+//         setBanks(ghsBanks);
+//         setFilteredBanks(ghsBanks);
+//       } catch (error) {
+//         console.error('Error fetching banks:', error);
+        
+//         if (error.response?.status === 401) {
+//           console.log('Unauthorized access, temp token may be invalid');
+//           localStorage.removeItem('tempToken');
+//           navigate('/login');
+//         } else {
+//           setErrors({ general: 'Failed to load banks. Please refresh the page.' });
+//         }
+//       }
+//     };
+
+//     fetchBanks();
+//   }, [navigate]);
+
+//   useEffect(() => {
+//     if (bankSearchTerm) {
+//       const filtered = banks.filter(bank =>
+//         bank.name.toLowerCase().includes(bankSearchTerm.toLowerCase())
+//       );
+//       setFilteredBanks(filtered);
+//     } else {
+//       setFilteredBanks(banks);
+//     }
+//   }, [bankSearchTerm, banks]);
+
+//   const validatePhoneNumber = (phone) => {
+//     // Must be 10 digits starting with 0
+//     const phoneRegex = /^0\d{9}$/;
+//     return phoneRegex.test(phone);
+//   };
+
+//   const validateStep1 = () => {
+//     const newErrors = {};
+    
+//     if (payoutType === 'bank') {
+//       if (!formData.payoutDetails.bank.bankCode) {
+//         newErrors.bank = 'Please select a bank';
+//       }
+      
+//       if (!formData.payoutDetails.bank.accountNumber.trim()) {
+//         newErrors.accountNumber = 'Account number is required';
+//       } else if (!/^\d+$/.test(formData.payoutDetails.bank.accountNumber)) {
+//         newErrors.accountNumber = 'Account number should contain only numbers';
+//       }
+      
+//       if (!formData.payoutDetails.bank.accountName.trim()) {
+//         newErrors.accountName = 'Account name is required';
+//       }
+//     } else {
+//       if (!formData.payoutDetails.momo.provider) {
+//         newErrors.momoProvider = 'Please select a mobile money provider';
+//       }
+      
+//       if (!formData.payoutDetails.momo.phoneNumber.trim()) {
+//         newErrors.momoPhone = 'Phone number is required';
+//       } else if (!validatePhoneNumber(formData.payoutDetails.momo.phoneNumber)) {
+//         newErrors.momoPhone = 'Phone number must start with 0 and be 10 digits long';
+//       }
+//     }
+
+//     setErrors(newErrors);
+//     return Object.keys(newErrors).length === 0;
+//   };
+
+//   const handleInputChange = (field, value) => {
+//     if (field.startsWith('bank.')) {
+//       const bankField = field.replace('bank.', '');
+//       setFormData(prev => ({
+//         ...prev,
+//         payoutDetails: {
+//           ...prev.payoutDetails,
+//           bank: {
+//             ...prev.payoutDetails.bank,
+//             [bankField]: value
+//           }
+//         }
+//       }));
+//     } else if (field.startsWith('momo.')) {
+//       const momoField = field.replace('momo.', '');
+//       setFormData(prev => ({
+//         ...prev,
+//         payoutDetails: {
+//           ...prev.payoutDetails,
+//           momo: {
+//             ...prev.payoutDetails.momo,
+//             [momoField]: value
+//           }
+//         }
+//       }));
+//     }
+    
+//     if (errors[field] || errors[field.replace('bank.', '')] || errors[field.replace('momo.', '')]) {
+//       setErrors(prev => ({ 
+//         ...prev, 
+//         [field]: '',
+//         [field.replace('bank.', '')]: '',
+//         [field.replace('momo.', '')]: ''
+//       }));
+//     }
+//   };
+
+//   const handleBankSelect = (bank) => {
+//     setSelectedBank(bank);
+//     setFormData(prev => ({
+//       ...prev,
+//       payoutDetails: {
+//         ...prev.payoutDetails,
+//         bank: {
+//           ...prev.payoutDetails.bank,
+//           bankCode: bank.code
+//         }
+//       }
+//     }));
+//     setShowBankList(false);
+//     setBankSearchTerm('');
+    
+//     if (errors.bank) {
+//       setErrors(prev => ({ ...prev, bank: '' }));
+//     }
+//   };
+
+//   const handlePayoutTypeChange = (type) => {
+//     setPayoutType(type);
+//     setFormData(prev => ({
+//       ...prev,
+//       payoutDetails: {
+//         ...prev.payoutDetails,
+//         type
+//       }
+//     }));
+//     setErrors({});
+//   };
+
+//   const handleNext = () => {
+//     if (step === 1 && validateStep1()) {
+//       setStep(2);
+//     }
+//   };
+
+//   const mapErrorReason = (reason, errorDetails) => {
+//     const errorMap = {
+//       'user_not_found': 'Your account could not be found. Please log in again.',
+//       'invalid_role': 'This action is only available to Potchefs.',
+//       'already_completed': 'Your profile is already complete. Use the update form instead.',
+//       'invalid_phone_format': 'Phone number must start with 0 and be 10 digits long.',
+//       'bank_verification_failed': 'Bank details could not be verified. Please check and try again.',
+//       'subaccount_creation_failed': 'We couldn\'t create your Paystack subaccount. Try again later or contact support.',
+//       'paystack_error': 'Something went wrong with Paystack. Please try again.',
+//       'validation_error': 'Please check your input and try again.'
+//     };
+
+//     // Handle validation errors with field-specific messages
+//     if (reason === 'validation_error' && errorDetails) {
+//       if (Array.isArray(errorDetails)) {
+//         return errorDetails.join('. ');
+//       } else if (typeof errorDetails === 'object') {
+//         return Object.values(errorDetails).flat().join('. ');
+//       }
+//     }
+
+//     return errorMap[reason] || 'An error occurred. Please try again.';
+//   };
+
+//   const handleSubmit = async () => {
+//     if (!validateStep1()) return;
+
+//     setIsLoading(true);
+
+//     try {
+//       // Prepare submission data based on payout type
+//       const submissionData = {
+//         payoutDetails: {
+//           type: payoutType,
+//           ...(payoutType === 'bank' ? {
+//             bank: formData.payoutDetails.bank
+//           } : {
+//             momo: formData.payoutDetails.momo
+//           })
+//         }
+//       };
+
+//       const response = await apiCompleteProfile(submissionData);
+      
+//       // Log successful completion
+//       console.log('Profile completed successfully:', {
+//         timestamp: new Date().toISOString(),
+//         payoutType
+//       });
+
+//       localStorage.removeItem('tempToken');
+      
+//       if (response.user) {
+//         localStorage.setItem('profileCompleted', 'true');
+//       }
+
+//       setStep(3);
+//     } catch (error) {
+//       console.error('Profile completion error:', error);
+      
+//       // Log failed attempt
+//       console.log('Profile completion failed:', {
+//         timestamp: new Date().toISOString(),
+//         reason: error.response?.data?.reason || 'unknown',
+//         status: error.response?.status
+//       });
+
+//       if (error.response?.status === 401) {
+//         localStorage.removeItem('tempToken');
+//         navigate('/login');
+//       } else if (error.response?.data) {
+//         const { reason, error: errorDetails } = error.response.data;
+//         const errorMessage = mapErrorReason(reason, errorDetails);
+        
+//         setErrors({ 
+//           general: errorMessage
+//         });
+//       } else {
+//         setErrors({ 
+//           general: 'An unexpected error occurred. Please try again.' 
+//         });
+//       }
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   const handleLoginRedirect = () => {
+//     navigate('/login');
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-red-50 to-orange-100 flex items-center justify-center p-4">
+//       <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-100">
+//         <div className="text-center pt-8 pb-6 px-8">
+//           <div className="flex justify-center mb-4">
+//             <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full">
+//               <Link to="/">
+//                 <ChefHat className="h-8 w-8 text-white" />
+//               </Link>
+//             </div>
+//           </div>
+//           <h1 className="text-2xl font-bold text-gray-900 mb-2">Complete Your Chef Profile</h1>
+//           <p className="text-gray-600">Add your payout details to start earning from your meals</p>
+//         </div>
+
+//         <div className="px-8 mb-6">
+//           <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+//             <span className={step >= 1 ? 'text-orange-500 font-medium' : ''}>Payout Details</span>
+//             <span className={step >= 2 ? 'text-orange-500 font-medium' : ''}>Review</span>
+//             <span className={step >= 3 ? 'text-orange-500 font-medium' : ''}>Complete</span>
+//           </div>
+//           <div className="w-full bg-gray-200 rounded-full h-2">
+//             <div 
+//               className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
+//               style={{ width: `${(step / 3) * 100}%` }}
+//             ></div>
+//           </div>
+//         </div>
+
+//         <div className="px-8 pb-8">
+//           {errors.general && (
+//             <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+//               <div className="flex items-center">
+//                 <AlertCircle className="h-4 w-4 text-red-600 mr-2 flex-shrink-0" />
+//                 <p className="text-sm text-red-600">{errors.general}</p>
+//               </div>
+//             </div>
+//           )}
+
+//           {step === 1 && (
+//             <div className="space-y-6">
+//               <div>
+//                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Payout Method</h3>
+                
+//                 <div className="grid grid-cols-2 gap-3 mb-6">
+//                   <button
+//                     type="button"
+//                     onClick={() => handlePayoutTypeChange('bank')}
+//                     className={`p-4 border-2 rounded-lg transition-all ${
+//                       payoutType === 'bank'
+//                         ? 'border-orange-500 bg-orange-50'
+//                         : 'border-gray-200 hover:border-gray-300'
+//                     }`}
+//                   >
+//                     <Building2 className={`h-6 w-6 mx-auto mb-2 ${
+//                       payoutType === 'bank' ? 'text-orange-500' : 'text-gray-400'
+//                     }`} />
+//                     <div className={`text-sm font-medium ${
+//                       payoutType === 'bank' ? 'text-orange-700' : 'text-gray-700'
+//                     }`}>
+//                       Bank Account
+//                     </div>
+//                   </button>
+
+//                   <button
+//                     type="button"
+//                     onClick={() => handlePayoutTypeChange('momo')}
+//                     className={`p-4 border-2 rounded-lg transition-all ${
+//                       payoutType === 'momo'
+//                         ? 'border-orange-500 bg-orange-50'
+//                         : 'border-gray-200 hover:border-gray-300'
+//                     }`}
+//                   >
+//                     <Smartphone className={`h-6 w-6 mx-auto mb-2 ${
+//                       payoutType === 'momo' ? 'text-orange-500' : 'text-gray-400'
+//                     }`} />
+//                     <div className={`text-sm font-medium ${
+//                       payoutType === 'momo' ? 'text-orange-700' : 'text-gray-700'
+//                     }`}>
+//                       Mobile Money
+//                     </div>
+//                   </button>
+//                 </div>
+
+//                 {payoutType === 'bank' ? (
+//                   <div className="space-y-4">
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-2">
+//                         Select Bank
+//                         <span className="text-xs text-gray-500 ml-2">(Choose your bank for payouts)</span>
+//                       </label>
+//                       <div className="relative">
+//                         <button
+//                           type="button"
+//                           onClick={() => setShowBankList(!showBankList)}
+//                           className={`w-full px-4 py-3 text-left border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+//                             errors.bank ? 'border-red-500' : 'border-gray-300'
+//                           } ${selectedBank ? 'bg-white' : 'bg-gray-50'}`}
+//                         >
+//                           <div className="flex items-center">
+//                             <Building2 className="h-5 w-5 text-gray-400 mr-3" />
+//                             <span className={selectedBank ? 'text-gray-900' : 'text-gray-500'}>
+//                               {selectedBank ? selectedBank.name : 'Choose your bank'}
+//                             </span>
+//                           </div>
+//                         </button>
+                        
+//                         {showBankList && (
+//                           <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+//                             <div className="p-3 border-b">
+//                               <div className="relative">
+//                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+//                                 <input
+//                                   type="text"
+//                                   placeholder="Search banks..."
+//                                   value={bankSearchTerm}
+//                                   onChange={(e) => setBankSearchTerm(e.target.value)}
+//                                   className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+//                                 />
+//                               </div>
+//                             </div>
+                            
+//                             <div className="max-h-40 overflow-y-auto">
+//                               {filteredBanks.length > 0 ? (
+//                                 filteredBanks.map((bank) => (
+//                                   <button
+//                                     key={bank.id}
+//                                     type="button"
+//                                     onClick={() => handleBankSelect(bank)}
+//                                     className="w-full px-4 py-3 text-left hover:bg-orange-50 focus:bg-orange-50 focus:outline-none transition-colors border-b last:border-b-0"
+//                                   >
+//                                     <div className="text-sm font-medium text-gray-900">{bank.name}</div>
+//                                     <div className="text-xs text-gray-500">{bank.code}</div>
+//                                   </button>
+//                                 ))
+//                               ) : (
+//                                 <div className="px-4 py-3 text-sm text-gray-500 text-center">
+//                                   No banks found
+//                                 </div>
+//                               )}
+//                             </div>
+//                           </div>
+//                         )}
+//                       </div>
+//                       {errors.bank && <p className="mt-1 text-sm text-red-600">{errors.bank}</p>}
+//                     </div>
+
+//                     <div>
+//                       <label htmlFor="accountNumber" className="block text-sm font-medium text-gray-700 mb-2">
+//                         Account Number
+//                         <span className="text-xs text-gray-500 ml-2">(Enter your bank account number)</span>
+//                       </label>
+//                       <div className="relative">
+//                         <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+//                         <input
+//                           id="accountNumber"
+//                           type="text"
+//                           placeholder="Enter your account number"
+//                           value={formData.payoutDetails.bank.accountNumber}
+//                           onChange={(e) => handleInputChange('bank.accountNumber', e.target.value)}
+//                           className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+//                             errors.accountNumber ? 'border-red-500' : 'border-gray-300'
+//                           }`}
+//                         />
+//                       </div>
+//                       {errors.accountNumber && <p className="mt-1 text-sm text-red-600">{errors.accountNumber}</p>}
+//                     </div>
+
+//                     <div>
+//                       <label htmlFor="accountName" className="block text-sm font-medium text-gray-700 mb-2">
+//                         Account Name
+//                         <span className="text-xs text-gray-500 ml-2">(Full name as shown on account)</span>
+//                       </label>
+//                       <input
+//                         id="accountName"
+//                         type="text"
+//                         placeholder="Account holder full name"
+//                         value={formData.payoutDetails.bank.accountName}
+//                         onChange={(e) => handleInputChange('bank.accountName', e.target.value)}
+//                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+//                           errors.accountName ? 'border-red-500' : 'border-gray-300'
+//                         }`}
+//                       />
+//                       {errors.accountName && <p className="mt-1 text-sm text-red-600">{errors.accountName}</p>}
+//                     </div>
+//                   </div>
+//                 ) : (
+//                   <div className="space-y-4">
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-2">
+//                         Mobile Money Provider
+//                       </label>
+//                       <select
+//                         value={formData.payoutDetails.momo.provider}
+//                         onChange={(e) => handleInputChange('momo.provider', e.target.value)}
+//                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+//                           errors.momoProvider ? 'border-red-500' : 'border-gray-300'
+//                         }`}
+//                       >
+//                         <option value="">Select provider</option>
+//                         {momoProviders.map((provider) => (
+//                           <option key={provider.code} value={provider.code}>
+//                             {provider.name}
+//                           </option>
+//                         ))}
+//                       </select>
+//                       {errors.momoProvider && <p className="mt-1 text-sm text-red-600">{errors.momoProvider}</p>}
+//                     </div>
+
+//                     <div>
+//                       <label htmlFor="momoPhone" className="block text-sm font-medium text-gray-700 mb-2">
+//                         Phone Number
+//                         <span className="text-xs text-gray-500 ml-2">(10 digits starting with 0)</span>
+//                       </label>
+//                       <div className="relative">
+//                         <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+//                         <input
+//                           id="momoPhone"
+//                           type="tel"
+//                           placeholder="0XXXXXXXXX"
+//                           maxLength="10"
+//                           value={formData.payoutDetails.momo.phoneNumber}
+//                           onChange={(e) => handleInputChange('momo.phoneNumber', e.target.value)}
+//                           className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+//                             errors.momoPhone ? 'border-red-500' : 'border-gray-300'
+//                           }`}
+//                         />
+//                       </div>
+//                       {errors.momoPhone && <p className="mt-1 text-sm text-red-600">{errors.momoPhone}</p>}
+//                       {formData.payoutDetails.momo.phoneNumber && validatePhoneNumber(formData.payoutDetails.momo.phoneNumber) && (
+//                         <p className="mt-1 text-sm text-green-600 flex items-center">
+//                           <CheckCircle className="h-4 w-4 mr-1" />
+//                           Valid phone number
+//                         </p>
+//                       )}
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+
+//               <button
+//                 onClick={handleNext}
+//                 className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 transition-all duration-200 flex items-center justify-center"
+//               >
+//                 Review Details
+//                 <ArrowRight className="ml-2 h-4 w-4" />
+//               </button>
+//             </div>
+//           )}
+
+//           {step === 2 && (
+//             <div className="space-y-6">
+//               <div>
+//                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Review Your Details</h3>
+                
+//                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+//                   <div>
+//                     <span className="text-sm text-gray-600">Payout Method:</span>
+//                     <p className="font-medium">{payoutType === 'bank' ? 'Bank Account' : 'Mobile Money'}</p>
+//                   </div>
+                  
+//                   <hr />
+                  
+//                   {payoutType === 'bank' ? (
+//                     <>
+//                       <div>
+//                         <span className="text-sm text-gray-600">Bank:</span>
+//                         <p className="font-medium">{selectedBank?.name}</p>
+//                       </div>
+                      
+//                       <div>
+//                         <span className="text-sm text-gray-600">Account Number:</span>
+//                         <p className="font-medium">{formData.payoutDetails.bank.accountNumber}</p>
+//                       </div>
+                      
+//                       <div>
+//                         <span className="text-sm text-gray-600">Account Name:</span>
+//                         <p className="font-medium">{formData.payoutDetails.bank.accountName}</p>
+//                       </div>
+//                     </>
+//                   ) : (
+//                     <>
+//                       <div>
+//                         <span className="text-sm text-gray-600">Provider:</span>
+//                         <p className="font-medium">
+//                           {momoProviders.find(p => p.code === formData.payoutDetails.momo.provider)?.name}
+//                         </p>
+//                       </div>
+                      
+//                       <div>
+//                         <span className="text-sm text-gray-600">Phone Number:</span>
+//                         <p className="font-medium">{formData.payoutDetails.momo.phoneNumber}</p>
+//                       </div>
+//                     </>
+//                   )}
+//                 </div>
+//               </div>
+
+//               <div className="flex space-x-3">
+//                 <button
+//                   onClick={() => setStep(1)}
+//                   disabled={isLoading}
+//                   className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+//                 >
+//                   Back
+//                 </button>
+//                 <button
+//                   onClick={handleSubmit}
+//                   disabled={isLoading}
+//                   className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+//                 >
+//                   {isLoading ? (
+//                     <div className="flex items-center justify-center">
+//                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+//                       Completing...
+//                     </div>
+//                   ) : (
+//                     'Complete Profile'
+//                   )}
+//                 </button>
+//               </div>
+//             </div>
+//           )}
+
+//           {step === 3 && (
+//             <div className="text-center space-y-6">
+//               <div className="flex justify-center">
+//                 <div className="p-4 bg-green-100 rounded-full">
+//                   <CheckCircle className="h-12 w-12 text-green-600" />
+//                 </div>
+//               </div>
+              
+//               <div>
+//                 <h3 className="text-xl font-bold text-gray-900 mb-2">Profile Completed Successfully!</h3>
+//                 <p className="text-gray-600 mb-4">
+//                   Your chef profile has been submitted for admin approval. You'll be notified once approved and can start selling your meals.
+//                 </p>
+                
+//                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+//                   <div className="flex items-start">
+//                     <AlertCircle className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+//                     <div className="text-sm text-blue-800 text-left">
+//                       <p className="font-medium">What's Next?</p>
+//                       <ul className="mt-2 list-disc list-inside space-y-1">
+//                         <li>Admin will review your application</li>
+//                         <li>You'll receive an email notification upon approval</li>
+//                         <li>Once approved, you can login and start adding meals</li>
+//                       </ul>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               <button
+//                 onClick={handleLoginRedirect}
+//                 className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200"
+//               >
+//                 Go to Login
+//               </button>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default PotchefProfileCompletion;

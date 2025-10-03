@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { apiCreateOrder } from '../../services/potlucky';
-import { apiCreatePayment, apiVodafoneMomo } from '../../services/payment';
+import { apiCreatePayment, apiVodafoneMomo, checkPaymentStatus } from '../../services/payment';
 import { getCurrentUser } from '../../services/auth';
 
 const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
@@ -35,12 +35,13 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
   const [error, setError] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
   
-  // NEW: Track voucher flow state
+  // Voucher flow state
   const [voucherRequired, setVoucherRequired] = useState(false);
   const [voucherCode, setVoucherCode] = useState('');
   const [ussdCode, setUssdCode] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
   const [expiresAt, setExpiresAt] = useState(null);
+  const [pollingInProgress, setPollingInProgress] = useState(false);
 
   // Payment method options
   const paymentMethods = [
@@ -52,11 +53,11 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
   // Mobile money providers
   const momoProviders = [
     { value: 'mtn', label: 'MTN Mobile Money' },
-    { value: 'vodafone', label: 'Vodafone Cash' },
-    { value: 'airteltigo', label: 'AirtelTigo Money' }
+    { value: 'vod', label: 'Vodafone Cash' },
+    { value: 'atl', label: 'AirtelTigo Money' }
   ];
 
-  // Generate time slots for pickup - FIXED to be between 30-60 minutes from now
+  // Generate time slots for pickup
   useEffect(() => {
     if (isOpen) {
       const generateTimeSlots = () => {
@@ -118,6 +119,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
       setUssdCode('');
       setPaymentReference('');
       setExpiresAt(null);
+      setPollingInProgress(false);
 
       // Pre-fill email from logged-in user
       if (currentUser?.email) {
@@ -177,6 +179,126 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
     return true;
   };
 
+  // Handle different mobile money authorization types
+  const handleMomoPaymentResponse = async (paymentResponse, orderResponse) => {
+    const authType = paymentResponse.authorizationType || 
+                    (paymentResponse.data?.status === 'send_otp' ? 'voucher' : 
+                     paymentResponse.data?.status === 'pay_offline' ? 'offline' : 'online');
+
+    setPaymentReference(paymentResponse.paymentReference || paymentResponse.data?.reference);
+
+    switch (authType) {
+      case 'voucher':
+        // Vodafone requires voucher
+        setUssdCode(paymentResponse.displayText || paymentResponse.data?.display_text || '*170*10#');
+        setExpiresAt(paymentResponse.expiresAt || new Date(Date.now() + 180000).toISOString());
+        setVoucherRequired(true);
+        
+        await Swal.fire({
+          icon: 'info',
+          title: 'Complete Mobile Money Payment',
+          html: `
+            <div class="text-left space-y-3">
+              <p class="font-semibold">Step 1: Dial USSD Code</p>
+              <div class="bg-blue-50 p-3 rounded flex items-center justify-between">
+                <code class="text-lg font-bold">${paymentResponse.displayText || paymentResponse.data?.display_text || '*170*10#'}</code>
+                <button onclick="navigator.clipboard.writeText('${paymentResponse.displayText || paymentResponse.data?.display_text || '*170*10#'}')" 
+                        class="text-blue-600 hover:text-blue-800">
+                  Copy
+                </button>
+              </div>
+              
+              <p class="font-semibold mt-4">Step 2: Enter Voucher Code</p>
+              <p class="text-sm text-gray-600">
+                After dialing the code, you'll receive a voucher. 
+                Enter it below to complete payment.
+              </p>
+              
+              <p class="text-xs text-red-600 mt-2">
+                ⏰ Code expires in 3 minutes
+              </p>
+            </div>
+          `,
+          confirmButtonColor: '#ea580c',
+          confirmButtonText: 'I have the voucher code'
+        });
+        break;
+
+      case 'offline':
+        // MTN/AirtelTigo - show USSD and start status polling
+        await Swal.fire({
+          icon: 'info',
+          title: 'Complete Mobile Money Payment',
+          html: `
+            <div class="text-left space-y-3">
+              <p class="font-semibold">Dial this USSD Code:</p>
+              <div class="bg-blue-50 p-3 rounded flex items-center justify-between">
+                <code class="text-lg font-bold">${paymentResponse.displayText || paymentResponse.data?.display_text}</code>
+                <button onclick="navigator.clipboard.writeText('${paymentResponse.displayText || paymentResponse.data?.display_text}')" 
+                        class="text-blue-600 hover:text-blue-800">
+                  Copy
+                </button>
+              </div>
+              <p class="text-sm text-gray-600 mt-3">
+                Follow the prompts on your phone to approve the payment.
+              </p>
+              <p class="text-xs text-gray-500">
+                Reference: ${paymentResponse.paymentReference || paymentResponse.data?.reference}
+              </p>
+              <div class="bg-yellow-50 p-2 rounded text-xs text-yellow-800">
+                ⚠️ You have 3 minutes to complete the payment on your phone
+              </div>
+            </div>
+          `,
+          confirmButtonColor: '#10b981',
+          confirmButtonText: 'I understand'
+        });
+
+        // Start polling for payment status
+        setPollingInProgress(true);
+        const pollResult = await checkPaymentStatus(paymentResponse.paymentReference || paymentResponse.data?.reference);
+        setPollingInProgress(false);
+        
+        if (pollResult.status === 'success') {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Payment Successful!',
+            text: 'Your mobile money payment has been confirmed.',
+            confirmButtonColor: '#10b981'
+          });
+          onOrderSuccess && onOrderSuccess(orderResponse.order, pollResult);
+          onClose();
+        } else {
+          await Swal.fire({
+            icon: 'error',
+            title: 'Payment Failed',
+            text: pollResult.message || 'Payment was not completed in time.',
+            confirmButtonColor: '#ea580c'
+          });
+          // Keep order but mark as payment failed
+          onOrderSuccess && onOrderSuccess(orderResponse.order, { ...pollResult, paymentFailed: true });
+          onClose();
+        }
+        break;
+
+      default:
+        // Online authorization or other cases
+        if (paymentResponse.authorizationUrl) {
+          window.open(paymentResponse.authorizationUrl, '_blank');
+        }
+        
+        await Swal.fire({
+          icon: 'info',
+          title: 'Mobile Money Payment Initiated',
+          text: `Please check your phone for a payment prompt. Reference: ${paymentResponse.paymentReference}`,
+          confirmButtonColor: '#10b981'
+        });
+
+        onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
+        onClose();
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
@@ -204,13 +326,6 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         notes: notes.trim()
       };
 
-      if (paymentMethod === 'momo') {
-        orderData.momo = {
-          phone: momoDetails.phone.trim(),
-          provider: momoDetails.provider
-        };
-      }
-
       console.log('Creating order with data:', orderData);
       const orderResponse = await apiCreateOrder(orderData);
       console.log('Order created successfully:', orderResponse);
@@ -236,7 +351,8 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
         try {
           const paymentPayload = {
             orderId: orderResponse.order.id || orderResponse.order._id,
-            method: paymentMethod
+            method: paymentMethod,
+            email: customerEmail.trim() // Required for Paystack
           };
 
           if (paymentMethod === 'momo') {
@@ -276,105 +392,20 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
                     icon: 'info',
                     confirmButtonColor: '#10b981',
                     confirmButtonText: 'Payment Completed'
+                  }).then(() => {
+                    onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
+                    onClose();
                   });
                 }
               });
+            } else {
+              onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
+              onClose();
             }
 
           } else if (paymentMethod === 'momo') {
-            // NEW: Handle different MoMo authorization types
-            console.log('Payment response:', paymentResponse);
-            
-            const authType = paymentResponse.authorizationType;
-            setPaymentReference(paymentResponse.paymentReference);
-            
-            if (authType === 'voucher') {
-              // Vodafone requires voucher
-              setUssdCode(paymentResponse.displayText || '*170*10#');
-              setExpiresAt(paymentResponse.expiresAt);
-              setVoucherRequired(true);
-              setLoading(false);
-              
-              // Show USSD instructions
-              await Swal.fire({
-                icon: 'info',
-                title: 'Complete Mobile Money Payment',
-                html: `
-                  <div class="text-left space-y-3">
-                    <p class="font-semibold">Step 1: Dial USSD Code</p>
-                    <div class="bg-blue-50 p-3 rounded flex items-center justify-between">
-                      <code class="text-lg font-bold">${paymentResponse.displayText || '*170*10#'}</code>
-                      <button onclick="navigator.clipboard.writeText('${paymentResponse.displayText}')" 
-                              class="text-blue-600 hover:text-blue-800">
-                        Copy
-                      </button>
-                    </div>
-                    
-                    <p class="font-semibold mt-4">Step 2: Enter Voucher Code</p>
-                    <p class="text-sm text-gray-600">
-                      After dialing the code, you'll receive a voucher. 
-                      Enter it below to complete payment.
-                    </p>
-                    
-                    ${paymentResponse.expiresAt ? `
-                      <p class="text-xs text-red-600 mt-2">
-                        ⏰ Code expires: ${new Date(paymentResponse.expiresAt).toLocaleTimeString()}
-                      </p>
-                    ` : ''}
-                  </div>
-                `,
-                confirmButtonColor: '#ea580c',
-                confirmButtonText: 'I have the voucher code'
-              });
-              
-              // Keep modal open to show voucher input
-              return;
-              
-            } else if (authType === 'offline') {
-              // MTN/AirtelTigo - just show USSD
-              await Swal.fire({
-                icon: 'info',
-                title: 'Complete Mobile Money Payment',
-                html: `
-                  <div class="text-left space-y-3">
-                    <p class="font-semibold">Dial this USSD Code:</p>
-                    <div class="bg-blue-50 p-3 rounded flex items-center justify-between">
-                      <code class="text-lg font-bold">${paymentResponse.displayText}</code>
-                      <button onclick="navigator.clipboard.writeText('${paymentResponse.displayText}')" 
-                              class="text-blue-600 hover:text-blue-800">
-                        Copy
-                      </button>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-3">
-                      Follow the prompts on your phone to approve the payment.
-                    </p>
-                    <p class="text-xs text-gray-500">
-                      Reference: ${paymentResponse.paymentReference}
-                    </p>
-                  </div>
-                `,
-                confirmButtonColor: '#10b981'
-              });
-              
-              onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
-              onClose();
-              
-            } else {
-              // Online authorization URL (rare for MoMo)
-              if (paymentResponse.authorizationUrl) {
-                window.open(paymentResponse.authorizationUrl, '_blank');
-              }
-              
-              await Swal.fire({
-                icon: 'info',
-                title: 'Mobile Money Payment Initiated',
-                text: `Please check your phone for a payment prompt. Reference: ${paymentResponse.paymentReference}`,
-                confirmButtonColor: '#10b981'
-              });
-
-              onOrderSuccess && onOrderSuccess(orderResponse.order, paymentResponse);
-              onClose();
-            }
+            // Handle mobile money payment with proper authorization flow
+            await handleMomoPaymentResponse(paymentResponse, orderResponse);
           }
           
         } catch (paymentError) {
@@ -413,7 +444,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
     }
   };
 
-  // NEW: Handle voucher submission
+  // Handle voucher submission
   const handleVoucherSubmit = async () => {
     if (!voucherCode.trim()) {
       setError('Please enter the voucher code');
@@ -482,7 +513,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            disabled={loading}
+            disabled={loading || pollingInProgress}
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -490,7 +521,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          {/* NEW: Show voucher input if required */}
+          {/* Show voucher input if required */}
           {voucherRequired ? (
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -569,7 +600,7 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
               </button>
             </div>
           ) : (
-            /* Your existing order form JSX */
+            /* Order form JSX */
             <div>
               {/* Meal Summary */}
               <div className="flex items-start space-x-4 mb-6 p-4 bg-gray-50 rounded-xl">
@@ -841,6 +872,19 @@ const OrderModal = ({ meal, isOpen, onClose, onOrderSuccess }) => {
                     </>
                   )}
                 </button>
+
+                {/* Polling Indicator */}
+                {pollingInProgress && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-blue-800 text-sm">
+                      Waiting for payment confirmation...
+                    </p>
+                    <p className="text-blue-600 text-xs mt-1">
+                      Please complete the payment on your phone
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -72,20 +72,6 @@ const Reviews = ({ mealId, canAddReview = true, className = '' }) => {
     });
   };
 
-  const calculateAverageRating = () => {
-    if (reviews.length === 0) return 0;
-    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return (total / reviews.length).toFixed(1);
-  };
-
-  const getRatingDistribution = () => {
-    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    reviews.forEach(review => {
-      distribution[review.rating]++;
-    });
-    return distribution;
-  };
-
   if (loading) {
     return (
       <div className={`space-y-4 ${className}`}>
@@ -104,91 +90,29 @@ const Reviews = ({ mealId, canAddReview = true, className = '' }) => {
     );
   }
 
-  const ratingDistribution = getRatingDistribution();
-  const averageRating = calculateAverageRating();
-
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Reviews Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <h2 className="text-xl font-bold text-gray-900">Reviews</h2>
-          <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
-            {reviews.length}
-          </span>
-        </div>
-        {canAddReview && !showAddReview && (
-          <button
-            onClick={() => setShowAddReview(true)}
-            className="flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Review</span>
-          </button>
-        )}
-      </div>
-
-      {/* Rating Summary */}
-      {reviews.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="flex items-center space-x-6 mb-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">{averageRating}</div>
-              <div className="flex items-center justify-center mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < Math.round(averageRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-gray-600">{reviews.length} reviews</p>
-            </div>
-            
-            {/* Rating Distribution */}
-            <div className="flex-1">
-              {[5, 4, 3, 2, 1].map(rating => (
-                <div key={rating} className="flex items-center space-x-2 mb-1">
-                  <span className="text-sm text-gray-600 w-2">{rating}</span>
-                  <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-400 h-2 rounded-full"
-                      style={{
-                        width: `${reviews.length > 0 ? (ratingDistribution[rating] / reviews.length) * 100 : 0}%`
-                      }}
-                    ></div>
-                  </div>
-                  <span className="text-sm text-gray-600 w-8 text-right">
-                    {ratingDistribution[rating]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Review Form */}
-      {showAddReview && (
-        <AddReviewForm
+      {/* Write a Review Form - Always visible when no reviews */}
+      {canAddReview && (
+        <WriteReviewForm
           onSubmit={handleAddReview}
-          onCancel={() => setShowAddReview(false)}
+          showByDefault={reviews.length === 0}
         />
       )}
 
+      {/* No Reviews Message */}
+      {reviews.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-500 text-sm">
+            No reviews yet. Be the first to review this meal!
+          </p>
+        </div>
+      )}
+
       {/* Reviews List */}
-      <div className="space-y-4">
-        {reviews.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No reviews yet</h3>
-            <p className="text-gray-500">Be the first to review this meal!</p>
-          </div>
-        ) : (
-          reviews.map((review) => (
+      {reviews.length > 0 && (
+        <div className="space-y-4">
+          {reviews.map((review) => (
             <ReviewCard
               key={review.id}
               review={review}
@@ -197,9 +121,9 @@ const Reviews = ({ mealId, canAddReview = true, className = '' }) => {
               onCancelEdit={() => setEditingReview(null)}
               onSaveEdit={handleEditReview}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Edit Review Modal */}
       {editingReview && (
@@ -213,16 +137,22 @@ const Reviews = ({ mealId, canAddReview = true, className = '' }) => {
   );
 };
 
-// Add Review Form Component
-const AddReviewForm = ({ onSubmit, onCancel }) => {
-  const [rating, setRating] = useState(5);
+// Write Review Form Component (matching screenshot design)
+const WriteReviewForm = ({ onSubmit, showByDefault = false }) => {
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (rating === 0) {
+      setError('Please select a rating');
+      return;
+    }
+
     if (!comment.trim()) {
       setError('Please write a review');
       return;
@@ -233,7 +163,7 @@ const AddReviewForm = ({ onSubmit, onCancel }) => {
 
     try {
       await onSubmit({ rating, comment: comment.trim() });
-      setRating(5);
+      setRating(0);
       setComment('');
     } catch (error) {
       setError('Failed to submit review. Please try again.');
@@ -243,42 +173,47 @@ const AddReviewForm = ({ onSubmit, onCancel }) => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Write a Review</h3>
+    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-6">Write a Review</h3>
       
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-red-600" />
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
           <span className="text-red-700 text-sm">{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Rating */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Rating
           </label>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             {[...Array(5)].map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setRating(i + 1)}
-                className={`w-8 h-8 transition-colors ${
-                  i < rating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'
-                }`}
+                onMouseEnter={() => setHoveredRating(i + 1)}
+                onMouseLeave={() => setHoveredRating(0)}
+                className="transition-transform hover:scale-110"
               >
-                <Star className="w-full h-full fill-current" />
+                <Star 
+                  className={`w-10 h-10 ${
+                    i < (hoveredRating || rating) 
+                      ? 'text-yellow-400 fill-yellow-400' 
+                      : 'text-gray-300'
+                  }`} 
+                />
               </button>
             ))}
-            <span className="ml-2 text-sm text-gray-600">({rating} star{rating !== 1 ? 's' : ''})</span>
           </div>
         </div>
 
         {/* Comment */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Your Review
           </label>
           <textarea
@@ -287,27 +222,18 @@ const AddReviewForm = ({ onSubmit, onCancel }) => {
             placeholder="Share your experience with this meal..."
             rows={4}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none bg-white"
           />
         </div>
 
-        {/* Buttons */}
-        <div className="flex space-x-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading || !comment.trim()}
-            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Submitting...' : 'Submit Review'}
-          </button>
-        </div>
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={loading || rating === 0 || !comment.trim()}
+          className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Submitting...' : 'Submit Review'}
+        </button>
       </form>
     </div>
   );
@@ -316,6 +242,7 @@ const AddReviewForm = ({ onSubmit, onCancel }) => {
 // Edit Review Form Component
 const EditReviewForm = ({ review, onSubmit, onCancel }) => {
   const [rating, setRating] = useState(review.rating);
+  const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState(review.comment);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -342,12 +269,12 @@ const EditReviewForm = ({ review, onSubmit, onCancel }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Edit Review</h3>
+          <h3 className="text-lg font-bold text-gray-900">Edit Review</h3>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 p-1"
           >
             <X className="w-5 h-5" />
           </button>
@@ -355,7 +282,7 @@ const EditReviewForm = ({ review, onSubmit, onCancel }) => {
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
             <span className="text-red-700 text-sm">{error}</span>
           </div>
         )}
@@ -372,14 +299,19 @@ const EditReviewForm = ({ review, onSubmit, onCancel }) => {
                   key={i}
                   type="button"
                   onClick={() => setRating(i + 1)}
-                  className={`w-8 h-8 transition-colors ${
-                    i < rating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'
-                  }`}
+                  onMouseEnter={() => setHoveredRating(i + 1)}
+                  onMouseLeave={() => setHoveredRating(0)}
+                  className="transition-transform hover:scale-110"
                 >
-                  <Star className="w-full h-full fill-current" />
+                  <Star 
+                    className={`w-8 h-8 ${
+                      i < (hoveredRating || rating) 
+                        ? 'text-yellow-400 fill-current' 
+                        : 'text-gray-300'
+                    }`} 
+                  />
                 </button>
               ))}
-              <span className="ml-2 text-sm text-gray-600">({rating} star{rating !== 1 ? 's' : ''})</span>
             </div>
           </div>
 
@@ -403,14 +335,14 @@ const EditReviewForm = ({ review, onSubmit, onCancel }) => {
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !comment.trim()}
-              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
               {loading ? 'Updating...' : 'Update Review'}
             </button>
@@ -422,20 +354,28 @@ const EditReviewForm = ({ review, onSubmit, onCancel }) => {
 };
 
 // Review Card Component
-const ReviewCard = ({ review, onEdit, isEditing, onCancelEdit, onSaveEdit }) => {
+const ReviewCard = ({ review, onEdit }) => {
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6">
       {/* Review Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           {/* User Avatar */}
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
             <User className="w-5 h-5 text-white" />
           </div>
           
           <div>
-            <h4 className="font-medium text-gray-900">
-              {review.user ? `${review.user.firstName} ${review.user.lastName}` : 'Anonymous User'}
+            <h4 className="font-semibold text-gray-900">
+              {review.reviewer ? `${review.reviewer.firstName} ${review.reviewer.lastName}` : review.user ? `${review.user.firstName} ${review.user.lastName}` : review.name || 'Anonymous User'}
             </h4>
             <div className="flex items-center space-x-2 mt-1">
               <div className="flex items-center">
@@ -484,15 +424,6 @@ const ReviewCard = ({ review, onEdit, isEditing, onCancelEdit, onSaveEdit }) => 
       </div>
     </div>
   );
-};
-
-// Format date helper function (defined outside component to avoid recreation)
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
 };
 
 export default Reviews;

@@ -47,8 +47,11 @@ import NotificationManager from "./pages/admin/NotificationManager";
 import Eateries from "./pages/potlucky/Eateries";
 import OrderTracking from "./pages/potlucky/OrderTracking";
 import PotchefProfileCompletion from "./pages/potchef/PotchefProfileCompletion";
+import { useTokenRefresh } from "./hooks/useTokenRefresh";
 
 function App() {
+  useTokenRefresh();
+  
   useEffect(() => {
     registerServiceWorker();
     requestNotificationPermission();

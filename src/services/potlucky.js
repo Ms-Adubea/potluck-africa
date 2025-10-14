@@ -177,7 +177,7 @@ export const apiGetMealReviews = async (mealId) => {
 
 export const apiEditReview = async (mealId, reviewId, reviewData) => {
   try {
-    const response = await apiClient.patch(`/meals/${mealId}/reviews/${reviewId}`, reviewData);
+    const response = await apiClient.patch(`/meals/${mealId}/review`, reviewData);
     return response.data;
   } catch (error) {
     console.error('Error updating review:', error);
@@ -221,53 +221,6 @@ export const apiGetMealById = async (mealId) => {
     throw error;
   }
 };
-
-// === FAVORITES ===
-// export const apiAddFavorite = async (mealId) => {
-//   try {
-//     const response = await apiClient.patch(`/meals/${mealId}/favorite`);
-//     return response.data;
-//   } catch (error) {
-//     console.error("Add favorite failed:", error);
-//     throw error;
-//   }
-// };
-
-// export const apiRemoveFavorite = async (mealId) => {
-//   try {
-//     const response = await apiClient.patch(`/meals/${mealId}/favorite`);
-//     return response.data;
-//   } catch (error) {
-//     console.error("Remove favorite failed:", error);
-//     throw error;
-//   }
-// };
-
-// export const apiGetFavoriteMeals = async () => {
-//   try {
-//     const response = await apiClient.get('/meals/favorites');
-    
-//     if (Array.isArray(response.data)) {
-//       return response.data;
-//     } else if (response.data?.favorites) {
-//       return response.data.favorites;
-//     }
-//     return [];
-//   } catch (error) {
-//     console.error('Error fetching favorite meals:', error);
-//     throw error;
-//   }
-// };
-
-// export const apiCheckFavoriteStatus = async (mealIds) => {
-//   try {
-//     const response = await apiClient.post('/favorites/check', { mealIds });
-//     return response.data;
-//   } catch (error) {
-//     console.error('Error checking favorite status:', error);
-//     throw error;
-//   }
-// };
 
 // === ORDERS ===
 export const apiCreateOrder = async (orderData) => {

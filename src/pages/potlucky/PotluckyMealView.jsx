@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Star, Clock, MapPin, Users, ChefHat, Heart, ShoppingCart, 
   Flame, Calendar, User, Mail, CheckCircle, XCircle, AlertCircle, 
-  Share2, MessageCircle, ChevronLeft, ChevronRight, CreditCard, ArrowRight
+  Share2, MessageCircle, ChevronLeft, ChevronRight, Phone
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -23,12 +23,10 @@ const PotluckyMealView = () => {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [showFullDescription, setShowFullDescription] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [orderData, setOrderData] = useState(null);
   const [paymentData, setPaymentData] = useState(null);
-  const [activeTab, setActiveTab] = useState('details'); // 'details' or 'reviews'
 
   const handleBack = () => navigate(-1);
 
@@ -42,7 +40,6 @@ const PotluckyMealView = () => {
       } catch (error) {
         console.error('Failed to load meal:', error);
         
-        // Use SweetAlert for error handling
         await Swal.fire({
           icon: 'error',
           title: 'Failed to Load Meal',
@@ -51,10 +48,8 @@ const PotluckyMealView = () => {
           confirmButtonText: 'Retry'
         }).then((result) => {
           if (result.isConfirmed) {
-            // Retry fetching meal
             fetchMeal();
           } else {
-            // Go back if user doesn't want to retry
             navigate(-1);
           }
         });
@@ -66,7 +61,6 @@ const PotluckyMealView = () => {
     fetchMeal();
   }, [mealId, navigate]);
 
-  // Reset active image when meal changes
   useEffect(() => {
     if (meal?.photos?.length > 0) {
       setActiveImageIndex(0);
@@ -79,7 +73,6 @@ const PotluckyMealView = () => {
         await apiRemoveFavorite(meal.id);
         setIsFavorite(false);
         
-        // Success notification
         const Toast = Swal.mixin({
           toast: true,
           position: 'top-end',
@@ -96,7 +89,6 @@ const PotluckyMealView = () => {
         await apiAddFavorite(meal.id);
         setIsFavorite(true);
         
-        // Success notification
         const Toast = Swal.mixin({
           toast: true,
           position: 'top-end',
@@ -113,7 +105,6 @@ const PotluckyMealView = () => {
     } catch (error) {
       console.error('Failed to update favorite:', error);
       
-      // Error notification
       await Swal.fire({
         icon: 'error',
         title: 'Action Failed',
@@ -124,7 +115,6 @@ const PotluckyMealView = () => {
     }
   };
 
-  // Enhanced order success handler with better user feedback
   const handleOrderSuccess = (order, payment) => {
     console.log('Order placed successfully:', order);
     console.log('Payment data:', payment);
@@ -134,7 +124,6 @@ const PotluckyMealView = () => {
     setShowOrderModal(false);
     setShowSuccessModal(true);
 
-    // Show initial success toast
     const Toast = Swal.mixin({
       toast: true,
       position: 'top-end',
@@ -159,7 +148,6 @@ const PotluckyMealView = () => {
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     
-    // Optional: Ask user if they want to view their orders
     Swal.fire({
       title: 'Order Placed!',
       text: 'Would you like to view your orders or continue browsing?',
@@ -171,10 +159,22 @@ const PotluckyMealView = () => {
       cancelButtonText: 'Continue Browsing'
     }).then((result) => {
       if (result.isConfirmed) {
-        navigate('/dashboard/potlucky/orders'); // Adjust route as needed
+        navigate('/dashboard/potlucky/orders');
       }
-      // If cancelled, just stay on current page
     });
+  };
+
+  const handleContactChef = () => {
+    if (meal?.createdBy?.phone) {
+      window.location.href = `tel:${meal.createdBy.phone}`;
+    } else {
+      Swal.fire({
+        icon: 'info',
+        title: 'Contact Unavailable',
+        text: 'Chef contact information is not available.',
+        confirmButtonColor: '#ea580c',
+      });
+    }
   };
 
   const formatDate = (dateString) =>
@@ -187,69 +187,12 @@ const PotluckyMealView = () => {
       minute: '2-digit'
     });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Available':
-        return 'text-green-700 bg-green-100';
-      case 'Pending':
-        return 'text-amber-700 bg-amber-100';
-      case 'Unavailable':
-        return 'text-red-700 bg-red-100';
-      default:
-        return 'text-gray-700 bg-gray-100';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Available':
-        return <CheckCircle className="w-3 h-3" />;
-      case 'Pending':
-        return <AlertCircle className="w-3 h-3" />;
-      case 'Unavailable':
-        return <XCircle className="w-3 h-3" />;
-      default:
-        return <AlertCircle className="w-3 h-3" />;
-    }
-  };
-
-  const getSpiceLevelInfo = (level) => {
-    switch (level) {
-      case 'Mild':
-        return { color: 'text-green-700', bg: 'bg-green-100', flames: 1 };
-      case 'Medium':
-        return { color: 'text-orange-700', bg: 'bg-orange-100', flames: 2 };
-      case 'Hot':
-        return { color: 'text-red-700', bg: 'bg-red-100', flames: 3 };
-      default:
-        return { color: 'text-gray-700', bg: 'bg-gray-100', flames: 0 };
-    }
-  };
-
   const isAvailableNow = () => {
     if (!meal) return false;
     const now = new Date();
     const availableFrom = new Date(meal.availableFrom);
     const availableTo = new Date(meal.availableTo);
     return now >= availableFrom && now <= availableTo && meal.status === 'Available';
-  };
-
-  const nextImage = () => {
-    if (meal?.photos?.length > 1) {
-      setActiveImageIndex((prev) => (prev + 1) % meal.photos.length);
-    }
-  };
-
-  const prevImage = () => {
-    if (meal?.photos?.length > 1) {
-      setActiveImageIndex((prev) => (prev - 1 + meal.photos.length) % meal.photos.length);
-    }
-  };
-
-  const goToImage = (index) => {
-    if (meal?.photos && index >= 0 && index < meal.photos.length) {
-      setActiveImageIndex(index);
-    }
   };
 
   const handleShare = async () => {
@@ -261,7 +204,6 @@ const PotluckyMealView = () => {
           url: window.location.href,
         });
       } else {
-        // Fallback: copy to clipboard
         await navigator.clipboard.writeText(window.location.href);
         
         const Toast = Swal.mixin({
@@ -310,8 +252,6 @@ const PotluckyMealView = () => {
     );
   }
 
-  const spiceInfo = getSpiceLevelInfo(meal.spiceLevel);
-  const hasMultipleImages = meal.photos && meal.photos.length > 1;
   const currentImage = meal.photos && meal.photos.length > 0 ? meal.photos[activeImageIndex] : null;
 
   return (
@@ -321,38 +261,31 @@ const PotluckyMealView = () => {
         <div className="flex items-center justify-between p-4">
           <button
             onClick={handleBack}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-medium">Back</span>
           </button>
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={handleShare}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-            >
-              <Share2 className="w-5 h-5 text-gray-700" />
-            </button>
-            <button
-              onClick={toggleFavorite}
-              className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
-                isFavorite
-                  ? 'bg-red-100 text-red-600'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-            </button>
-          </div>
+          <button
+            onClick={toggleFavorite}
+            className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+              isFavorite
+                ? 'bg-red-100 text-red-600'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+          </button>
         </div>
       </div>
 
-      {/* Hero Image Carousel */}
+      {/* Hero Image with Category Badge */}
       <div className="relative">
         <div className="aspect-[4/3] bg-gray-200 relative overflow-hidden">
           {currentImage ? (
             <img
               src={currentImage}
-              alt={`${meal.mealName} - Image ${activeImageIndex + 1}`}
+              alt={meal.mealName}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.src = 'https://via.placeholder.com/600x450/f3f4f6/9ca3af?text=No+Image';
@@ -364,320 +297,204 @@ const PotluckyMealView = () => {
             </div>
           )}
 
-          {/* Navigation Arrows */}
-          {hasMultipleImages && (
-            <>
-              <button
-                onClick={prevImage}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-colors"
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-colors"
-                aria-label="Next image"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
-          )}
-        </div>
-        
-        {/* Image Indicators */}
-        {hasMultipleImages && (
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <div className="flex space-x-2 bg-black/30 backdrop-blur-sm rounded-full px-3 py-2">
-              {meal.photos.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToImage(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    activeImageIndex === index ? 'bg-white scale-125' : 'bg-white/60 hover:bg-white/80'
-                  }`}
-                  aria-label={`Go to image ${index + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Image Counter */}
-        {hasMultipleImages && (
+          {/* Category Badge */}
           <div className="absolute top-4 left-4">
-            <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
-              {activeImageIndex + 1} / {meal.photos.length}
+            <div className="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-medium">
+              {meal.category}
             </div>
           </div>
-        )}
-
-        {/* Status Badge */}
-        <div className="absolute top-4 right-4">
-          <div className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md ${getStatusColor(meal.status)}`}>
-            {getStatusIcon(meal.status)}
-            <span>{meal.status}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b">
-        <div className="flex">
-          <button
-            onClick={() => setActiveTab('details')}
-            className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
-              activeTab === 'details'
-                ? 'text-orange-600 border-b-2 border-orange-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            Details
-          </button>
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
-              activeTab === 'reviews'
-                ? 'text-orange-600 border-b-2 border-orange-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            Reviews ({meal.reviewCount || 0})
-          </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="bg-white relative z-10 px-6 pt-6 pb-32">
-        {activeTab === 'details' ? (
-          <>
-            {/* Title and Basic Info */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{meal.mealName}</h1>
-              
-              {/* Rating and Reviews */}
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="flex items-center space-x-1">
-                  <Star className="w-5 h-5 text-amber-400 fill-current" />
-                  <span className="font-semibold text-gray-900">{meal.averageRating || 'New'}</span>
-                  <span className="text-gray-500 text-sm">({meal.reviewCount} reviews)</span>
-                </div>
-                <button 
-                  onClick={() => setActiveTab('reviews')}
-                  className="flex items-center space-x-1 text-orange-600 hover:text-orange-700 text-sm font-medium"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>See reviews</span>
-                </button>
-              </div>
+      <div className="bg-white px-6 pt-6 pb-32">
+        {/* Title and Description */}
+        <div className="mb-6">
+          <div className="flex items-start justify-between mb-3">
+            <h1 className="text-2xl font-bold text-gray-900 flex-1">{meal.mealName}</h1>
+            <button
+              onClick={toggleFavorite}
+              className="ml-2"
+            >
+              <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current text-red-600' : 'text-gray-400'}`} />
+            </button>
+          </div>
+          
+          <p className="text-gray-600 leading-relaxed mb-4">
+            {meal.description}
+          </p>
 
-              {/* Description */}
-              <div className="text-gray-600 leading-relaxed">
-                <p className={`${!showFullDescription && meal.description.length > 150 ? 'line-clamp-3' : ''}`}>
-                  {meal.description}
-                </p>
-                {meal.description.length > 150 && (
-                  <button
-                    onClick={() => setShowFullDescription(!showFullDescription)}
-                    className="text-orange-600 hover:text-orange-700 text-sm font-medium mt-2"
-                  >
-                    {showFullDescription ? 'Show less' : 'Read more'}
-                  </button>
-                )}
-              </div>
+          {/* Quick Info */}
+          <div className="flex items-center space-x-4 text-sm text-gray-600">
+            <div className="flex items-center space-x-1">
+              <Clock className="w-4 h-4" />
+              <span>{meal.cookingTime} mins</span>
             </div>
-
-            {/* Key Details */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center space-x-2 mb-1">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Cooking Time</span>
-                </div>
-                <span className="font-semibold text-gray-900">{meal.cookingTime} mins</span>
-              </div>
-              
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center space-x-2 mb-1">
-                  <Users className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Servings</span>
-                </div>
-                <span className="font-semibold text-gray-900">{meal.servings}</span>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center space-x-2 mb-1">
-                  <Flame className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Spice Level</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="font-semibold text-gray-900">{meal.spiceLevel}</span>
-                  <div className="flex">
-                    {[...Array(3)].map((_, i) => (
-                      <Flame
-                        key={i}
-                        className={`w-3 h-3 ${i < spiceInfo.flames ? spiceInfo.color : 'text-gray-300'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center space-x-2 mb-1">
-                  <MapPin className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Pickup</span>
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">{meal.pickupLocation}</span>
-              </div>
+            <div className="flex items-center space-x-1">
+              <Flame className="w-4 h-4" />
+              <span>{meal.spiceLevel === 'Mild' ? '680' : '800'} calories</span>
             </div>
+          </div>
+        </div>
 
-            {/* Availability */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-              <div className="flex items-center space-x-2 mb-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
-                <span className="font-semibold text-blue-900">Availability Window</span>
-              </div>
-              <div className="text-sm text-blue-800 space-y-1">
-                <div>From: {formatDate(meal.availableFrom)}</div>
-                <div>Until: {formatDate(meal.availableTo)}</div>
-                <div className={`font-semibold flex items-center space-x-1 mt-2 ${isAvailableNow() ? 'text-green-600' : 'text-red-600'}`}>
-                  {isAvailableNow() ? (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Available for order now</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-4 h-4" />
-                      <span>Not currently available</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+        {/* Ingredients Section */}
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-3">Ingredients</h3>
+          <div className="flex flex-wrap gap-2">
+            {meal.mainIngredients.map((ingredient, index) => (
+              <span
+                key={index}
+                className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg capitalize"
+              >
+                {ingredient}
+              </span>
+            ))}
+          </div>
+        </div>
 
-            {/* Ingredients */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Main Ingredients</h3>
+        {/* Additional Details */}
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Servings</span>
+            <span className="font-semibold text-gray-900">{meal.servings}</span>
+          </div>
+          
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Cuisine</span>
+            <span className="font-semibold text-gray-900">{meal.cuisine}</span>
+          </div>
+          
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Spice Level</span>
+            <span className="font-semibold text-gray-900">{meal.spiceLevel}</span>
+          </div>
+          
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Pickup Location</span>
+            <span className="font-semibold text-gray-900 text-right">{meal.pickupLocation}</span>
+          </div>
+          
+          {meal.dietaryRestrictions && meal.dietaryRestrictions.length > 0 && (
+            <div className="py-2 border-b border-gray-200">
+              <span className="text-gray-600 block mb-2">Dietary Info</span>
               <div className="flex flex-wrap gap-2">
-                {meal.mainIngredients.map((ingredient, index) => (
+                {meal.dietaryRestrictions.map((restriction, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1.5 bg-green-100 text-green-800 text-sm font-medium rounded-full"
+                    className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full"
                   >
-                    {ingredient}
+                    {restriction}
                   </span>
                 ))}
               </div>
             </div>
+          )}
+          
+          {/* <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Sold Count</span>
+            <span className="font-semibold text-gray-900">{meal.soldCount} orders</span>
+          </div>
+          
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Availability</span>
+            <span className="font-semibold text-gray-900">{meal.availabilityPattern}</span>
+          </div>
+          
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Order Cutoff Time</span>
+            <span className="font-semibold text-gray-900">{meal.cutoffTime} hours before</span>
+          </div>
+          
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Preparation</span>
+            <span className="font-semibold text-gray-900">{meal.preparationFacility}</span>
+          </div> */}
+          
+          {/* <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <span className="text-gray-600">Food Safety Certified</span>
+            <span className={`font-semibold ${meal.foodSafetyCertified ? 'text-green-600' : 'text-gray-500'}`}>
+              {meal.foodSafetyCertified ? 'Yes' : 'No'}
+            </span>
+          </div> */}
+          
+          <div className="flex items-center justify-between py-2">
+            <span className="text-gray-600">Available From</span>
+            <span className="font-semibold text-gray-900 text-sm text-right">{formatDate(meal.availableFrom)}</span>
+          </div>
+          
+          <div className="flex items-center justify-between py-2">
+            <span className="text-gray-600">Available Until</span>
+            <span className="font-semibold text-gray-900 text-sm text-right">{formatDate(meal.availableTo)}</span>
+          </div>
+        </div>
 
-            {/* Dietary Information */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Dietary Information</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Category</span>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">{meal.category}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Cuisine</span>
-                  <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">{meal.cuisine}</span>
-                </div>
-                {meal.dietaryRestrictions && meal.dietaryRestrictions.length > 0 && (
-                  <div>
-                    <span className="text-gray-600 block mb-2">Dietary Restrictions</span>
-                    <div className="flex flex-wrap gap-2">
-                      {meal.dietaryRestrictions.map((restriction, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full"
-                        >
-                          {restriction}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        {/* Chef Information */}
+        <div className="mb-6 p-4 bg-orange-50 rounded-xl border border-orange-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-3">Chef Information</h3>
+          <div className="flex items-center space-x-4">
+            {meal.createdBy?.avatar ? (
+              <img
+                src={meal.createdBy.avatar}
+                alt={`${meal.createdBy.firstName} ${meal.createdBy.lastName}`}
+                className="w-16 h-16 rounded-full object-cover border-2 border-orange-200"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/64/f97316/ffffff?text=' + meal.createdBy.firstName.charAt(0);
+                }}
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-orange-200 flex items-center justify-center border-2 border-orange-300">
+                <User className="w-8 h-8 text-orange-600" />
               </div>
-            </div>
-
-            {/* Chef Information */}
-            <div className="border border-gray-200 rounded-xl p-4 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <ChefHat className="w-5 h-5 mr-2" />
-                Chef Information
-              </h3>
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
-                  {meal.createdBy.avatar ? (
-                    <img 
-                      src={meal.createdBy.avatar} 
-                      alt="Chef" 
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-6 h-6 text-white" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">
-                    {meal.createdBy.firstName} {meal.createdBy.lastName}
-                  </h4>
-                  <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
-                    <Mail className="w-4 h-4" />
-                    <span>Contact Chef</span>
-                  </div>
-                </div>
-                <button className="text-orange-600 hover:text-orange-700">
-                  <MessageCircle className="w-5 h-5" />
+            )}
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 text-lg">
+                {meal.createdBy?.firstName} {meal.createdBy?.lastName}
+              </h4>
+              {meal.createdBy?.phone && (
+                <button
+                  onClick={handleContactChef}
+                  className="mt-2 flex items-center space-x-2 text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>{meal.createdBy.phone}</span>
                 </button>
-              </div>
+              )}
             </div>
-          </>
-        ) : (
-          /* Reviews Tab */
+          </div>
+        </div>
+
+        {/* Price */}
+        <div className="mb-8">
+          <div className="text-3xl font-bold text-orange-600">
+            ¢{meal.price.toFixed(2)}
+          </div>
+        </div>
+
+        {/* Order Button */}
+        <button
+          onClick={() => setShowOrderModal(true)}
+          disabled={!isAvailableNow()}
+          className={`w-full flex items-center justify-center space-x-2 py-4 px-4 rounded-xl font-semibold text-lg transition-all mb-8 ${
+            isAvailableNow()
+              ? 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          <ShoppingCart className="w-5 h-5" />
+          <span>Order Now</span>
+        </button>
+
+        {/* Customer Reviews Section */}
+        <div className="border-t pt-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
+          
           <Reviews 
             mealId={mealId} 
             canAddReview={true}
-            className="mt-4"
+            className=""
           />
-        )}
-      </div>
-
-      {/* Fixed Bottom Bar - Only show on details tab */}
-      {activeTab === 'details' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-30">
-          <div className="max-w-md mx-auto">
-            {/* Price Display */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="text-2xl font-bold text-gray-900">¢{meal.price}</div>
-                <div className="text-sm text-gray-500">per serving</div>
-              </div>
-              
-              <div className="text-sm text-gray-600">
-                <Clock className="w-4 h-4 inline mr-1" />
-                {meal.cookingTime} mins cooking time
-              </div>
-            </div>
-
-            {/* Order Button */}
-            <button
-              onClick={() => setShowOrderModal(true)}
-              disabled={!isAvailableNow()}
-              className={`w-full flex items-center justify-center space-x-2 py-4 px-4 rounded-xl font-semibold text-lg transition-all ${
-                isAvailableNow()
-                  ? 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span>{isAvailableNow() ? 'ORDER NOW' : 'CURRENTLY UNAVAILABLE'}</span>
-            </button>
-          </div>
         </div>
-      )}
+      </div>
 
       {/* Order Modal */}
       <OrderModal
